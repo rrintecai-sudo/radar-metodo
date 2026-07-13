@@ -530,6 +530,15 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
         st.markdown(f"### {s['ticker']} · {dir_txt}")
         st.caption(f"{s['estrategia_nombre']} · {ritmo}")
 
+        # sello: ¿vale la pena? (calculado en render_grid)
+        if "_vale" in s:
+            if s["_vale"]:
+                st.markdown("<span style='background:#E3F6EC;color:#0E7C6B;padding:2px 9px;border-radius:20px;"
+                            "font-weight:700;font-size:.78rem;'>✅ VALE LA PENA</span>", unsafe_allow_html=True)
+            else:
+                st.markdown("<span style='background:#F0EEEA;color:#8A8578;padding:2px 9px;border-radius:20px;"
+                            "font-weight:600;font-size:.78rem;'>⚪ No vale la pena hoy</span>", unsafe_allow_html=True)
+
         cot = s.get("_cot")
         if cot:
             pr = opcion_real.proyeccion(s["precio"], cot, s.get("beneficio_pct") or 2.0)
@@ -538,9 +547,12 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
             c1, c2 = st.columns(2)
             c1.metric("Arriesgas", f"${pr['costo']}", help="Pérdida máxima (topada)")
             c2.metric("🚀 Mejor caso", f"×{mult}", help=f"${pr['costo']} → ${round(pr['costo']*mult):,}")
-            hc = historial(s["ticker"], s["estrategia"])
-            ve = opcion_real.valor_esperado(s["precio"], cot, hc["targets"], s.get("mfe_max") or 0, tp) \
-                if (hc and not hc.get("sin_datos")) else None
+            if "_ve" in s:
+                ve = s["_ve"]
+            else:
+                hc = historial(s["ticker"], s["estrategia"])
+                ve = opcion_real.valor_esperado(s["precio"], cot, hc["targets"], s.get("mfe_max") or 0, tp) \
+                    if (hc and not hc.get("sin_datos")) else None
         else:
             ve = None
 
@@ -617,8 +629,28 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
         if len(mostrados) >= top:
             break
     if not mostrados:
-        st.caption("— Sin oportunidades que cumplan el filtro aquí ahora mismo. —")
+        st.caption("— Sin oportunidades aquí ahora mismo. —")
         return 0
+
+    # ¿cuáles VALEN LA PENA? (VE >= 1.2 y el premio justifica el tiempo)
+    for s in mostrados:
+        cot = s.get("_cot")
+        if not cot:
+            s["_ve"] = None; s["_vale"] = False
+            continue
+        tp = s["opcion"]["tipo"]
+        h = historial(s["ticker"], s["estrategia"])
+        ve = (opcion_real.valor_esperado(s["precio"], cot, h["targets"], s.get("mfe_max") or 0, tp)
+              if (h and not h.get("sin_datos")) else None)
+        mult = opcion_real.multiplo(s["precio"], cot, s.get("mfe_max") or 0, tp)
+        umbral = max(PREMIO_PISO_ABSOLUTO, PREMIO_MINIMO_POR_ESTRATEGIA.get(s["estrategia"], 1.5))
+        s["_ve"] = ve
+        s["_vale"] = bool(ve is not None and ve >= 1.2 and mult >= umbral)
+
+    if sum(1 for s in mostrados if s.get("_vale")) == 0:
+        st.warning("⏳ **Ninguna de aquí vale la pena hoy** (valor esperado bajo o el premio no "
+                   "justifica el tiempo). Lo más inteligente: **esperar**. Puedes verlas abajo igual.")
+
     cols = st.columns(ncols)
     for i, s in enumerate(mostrados):
         with cols[i % ncols]:
