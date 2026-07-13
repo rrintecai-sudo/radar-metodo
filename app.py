@@ -564,7 +564,8 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
                             f"🎰 <b>Moonshot</b>: ${costo_ag} · mejor caso ×{mm} · ×10: {p10}% "
                             f"<i>(apuesta chica)</i></div>", unsafe_allow_html=True)
 
-        url = f"?view=ficha&t={s['ticker']}&e={s['estrategia']}"
+        _tok = _token()
+        url = f"?view=ficha&t={s['ticker']}&e={s['estrategia']}" + (f"&k={_tok}" if _tok else "")
         st.markdown(
             f'<a href="{url}" target="_blank" style="display:block;text-align:center;padding:9px;'
             f'border:1px solid var(--line,#E9E4DA);border-radius:11px;text-decoration:none;'
@@ -631,18 +632,36 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
 st.markdown(ESTILO, unsafe_allow_html=True)
 
 
-def _puerta_contrasena():
-    """Candado simple: si hay una contraseña configurada (RADAR_PASSWORD), la pide.
-    En local, si no hay contraseña configurada, el candado se desactiva solo."""
+def _clave_esperada():
     import os
-    esperada = os.environ.get("RADAR_PASSWORD")
-    if not esperada:
+    e = os.environ.get("RADAR_PASSWORD")
+    if not e:
         try:
-            esperada = st.secrets.get("password")
+            e = st.secrets.get("password")
         except Exception:
-            esperada = None
+            e = None
+    return e
+
+
+def _token() -> str:
+    """Token derivado de la contraseña (NO es la contraseña). Sirve para que las
+    pestañas de ficha ya autenticadas no vuelvan a pedir la clave."""
+    e = _clave_esperada()
+    if not e:
+        return ""
+    import hashlib
+    return hashlib.sha256(f"radar-metodo:{e}".encode()).hexdigest()[:24]
+
+
+def _puerta_contrasena():
+    """Candado: si hay contraseña configurada (RADAR_PASSWORD/secrets), la pide.
+    En local, si no hay contraseña, se desactiva solo."""
+    esperada = _clave_esperada()
     if not esperada:                       # sin contraseña configurada -> abierto (uso local)
         return
+    # las pestañas de ficha traen un token válido -> ya están autenticadas
+    if st.query_params.get("k") == _token():
+        st.session_state["auth_ok"] = True
     if st.session_state.get("auth_ok"):
         return
     _c1, _c2, _c3 = st.columns([1, 1.4, 1])
