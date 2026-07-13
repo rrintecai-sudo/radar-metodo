@@ -66,13 +66,10 @@ hr{margin:.6rem 0;border-color:var(--line);}
 """
 
 CABECERA = """
-<div style="display:flex;align-items:center;gap:12px;padding:6px 0 2px 0;border-bottom:2px solid var(--accent);margin-bottom:14px;">
-  <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#0FB37E,#0E7C6B);
-       display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:18px;">◈</div>
-  <div>
-    <div style="font-size:1.35rem;font-weight:800;color:#141B26;letter-spacing:-.02em;line-height:1;">RADAR<span style="color:#0FB37E;">·</span>MÉTODO</div>
-    <div style="font-size:.72rem;color:#7A8494;letter-spacing:.05em;text-transform:uppercase;">Motor de opciones · Cardona</div>
-  </div>
+<div style="display:flex;align-items:center;gap:11px;padding:6px 0 2px 0;border-bottom:2px solid var(--accent);margin-bottom:14px;">
+  <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#0FB37E,#0E7C6B);
+       display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:17px;">◈</div>
+  <div style="font-size:1.3rem;font-weight:800;color:#141B26;letter-spacing:-.02em;">radar-metodo</div>
 </div>
 """
 
@@ -87,8 +84,9 @@ def cargar(ticker: str, intervalo: str) -> pd.DataFrame:
     return method.preparar(data.obtener(ticker, intervalo))
 
 
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
 def historial(ticker: str, estrategia: str) -> dict:
+    # el histórico casi no cambia durante el día -> caché largo (6h) para ir rápido
     return backtest.historial_senal(ticker, estrategia)
 
 
@@ -647,16 +645,18 @@ def _puerta_contrasena():
         return
     if st.session_state.get("auth_ok"):
         return
-    st.markdown(CABECERA, unsafe_allow_html=True)
-    st.markdown("### 🔒 Acceso privado")
-    pw = st.text_input("Contraseña", type="password", label_visibility="collapsed",
-                       placeholder="Escribe la contraseña…")
-    if pw:
-        if pw == esperada:
-            st.session_state["auth_ok"] = True
-            st.rerun()
-        else:
-            st.error("Contraseña incorrecta.")
+    _c1, _c2, _c3 = st.columns([1, 1.4, 1])
+    with _c2:
+        st.markdown("<div style='height:12vh'></div>", unsafe_allow_html=True)
+        st.markdown(CABECERA, unsafe_allow_html=True)
+        pw = st.text_input("clave", type="password", label_visibility="collapsed",
+                           placeholder="Clave")
+        if pw:
+            if pw == esperada:
+                st.session_state["auth_ok"] = True
+                st.rerun()
+            else:
+                st.error("Incorrecta.")
     st.stop()
 
 

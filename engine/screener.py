@@ -20,8 +20,8 @@ from engine import backtest, data, method
 
 # Estrategias diarias (las que usa el escaneo amplio; solo necesitan datos 1d).
 ESTRATEGIAS_DIARIAS = ["piso_fuerte", "tres_semanas"]
-# Cuántas señales activas backtesteamos a fondo (para no saturar).
-TOPE_BACKTEST = 18
+# Cuántas señales activas backtesteamos a fondo (para no saturar / ir rápido).
+TOPE_BACKTEST = 12
 
 # Pesos del score de oportunidad (equilibrado, con un pelín más a beneficio).
 W_BENEFICIO = 0.40
