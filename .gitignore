@@ -11,3 +11,4 @@ data/cache/
 # 🔒 SECRETO: token de Telegram. NUNCA subir esto.
 alertas.json
 .streamlit/secrets.toml
+*.docx
