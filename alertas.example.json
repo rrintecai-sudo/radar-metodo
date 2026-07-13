@@ -1,0 +1,5 @@
+{
+  "_instrucciones": "Copia este archivo como 'alertas.json' y pon tu token y chat_id de Telegram. Mira ALERTAS.md.",
+  "telegram_token": "",
+  "telegram_chat_id": ""
+}

@@ -1,0 +1,13 @@
+# entorno y temporales
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+~$*
+
+# caché de datos (se regenera solo)
+data/cache/
+
+# 🔒 SECRETO: token de Telegram. NUNCA subir esto.
+alertas.json
+.streamlit/secrets.toml

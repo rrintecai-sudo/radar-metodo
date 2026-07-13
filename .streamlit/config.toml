@@ -1,0 +1,11 @@
+# Tema claro, cálido y limpio (crema suave que no cansa la vista).
+[theme]
+base = "light"
+primaryColor = "#0F7A5A"
+backgroundColor = "#FBF9F5"           # crema suave (fondo)
+secondaryBackgroundColor = "#FFFFFF"  # blanco para tarjetas y barra lateral
+textColor = "#2A2E35"                 # gris oscuro (no negro puro)
+font = "sans serif"
+
+[server]
+headless = true
