@@ -528,6 +528,41 @@ def _fmt_dias(d) -> str:
     return f"~{d:.0f} días"
 
 
+def calificar(s: dict) -> dict:
+    """El TOOL es el juez: combina todo en una calificación clara, en palabras.
+    Oscar solo la lee, no tiene que pesar números."""
+    ve = s.get("_ve")
+    p = s.get("_p_recup")          # prob. de recuperar (+50%)
+    t = s.get("_t_recup")          # tiempo a recuperar
+    n = s.get("n_muestra", 0)      # tamaño de muestra
+    if ve is None:
+        return {"emoji": "⚪", "titulo": "SIN DATOS",
+                "color": "#8A8578", "resumen": "No hay suficiente histórico para calificarla."}
+    prob = p if p is not None else 0
+    # nivel según VE (edge) + probabilidad de recuperar (seguridad)
+    if ve >= 1.5 and prob >= 80 and n >= 12:
+        nivel = {"emoji": "🟢", "titulo": "EXCELENTE", "color": "#0E7C6B"}
+    elif ve >= 1.2 and prob >= 70:
+        nivel = {"emoji": "🟢", "titulo": "BUENA", "color": "#0E7C6B"}
+    elif ve >= 1.0 and prob >= 55:
+        nivel = {"emoji": "🟡", "titulo": "REGULAR", "color": "#B8860B"}
+    else:
+        nivel = {"emoji": "⚪", "titulo": "DÉBIL — mejor no", "color": "#8A8578"}
+    # frase en cristiano
+    if t is None:
+        vel = ""
+    elif t < 1.5:
+        vel = " y **rápido**"
+    elif t <= 4:
+        vel = " en **pocos días**"
+    else:
+        vel = ", pero **lento** (varios días)"
+    prtxt = f"**{prob:.0f}% de recuperar tu dinero**{vel}" if p is not None else "recuperación incierta"
+    pinza = " · muestra chica, con pinza" if n < 12 else ""
+    nivel["resumen"] = f"{prtxt}.{pinza}"
+    return nivel
+
+
 def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
     """Tarjeta corta y limpia: lo esencial de un vistazo."""
     nivel, badge = accion_badge(s)
@@ -540,14 +575,14 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
         st.markdown(f"### {s['ticker']} · {dir_txt}")
         st.caption(f"{s['estrategia_nombre']} · {ritmo}")
 
-        # sello: ¿vale la pena? (calculado en render_grid)
-        if "_vale" in s:
-            if s["_vale"]:
-                st.markdown("<span style='background:#E3F6EC;color:#0E7C6B;padding:2px 9px;border-radius:20px;"
-                            "font-weight:700;font-size:.78rem;'>✅ VALE LA PENA</span>", unsafe_allow_html=True)
-            else:
-                st.markdown("<span style='background:#F0EEEA;color:#8A8578;padding:2px 9px;border-radius:20px;"
-                            "font-weight:600;font-size:.78rem;'>⚪ No vale la pena hoy</span>", unsafe_allow_html=True)
+        # 🧑‍⚖️ LA CALIFICACIÓN: el tool juzga por ti, en palabras
+        cal = calificar(s)
+        st.markdown(
+            f"<div style='background:{cal['color']}14;border-left:4px solid {cal['color']};"
+            f"border-radius:8px;padding:7px 11px;margin:2px 0;'>"
+            f"<span style='font-weight:800;color:{cal['color']};font-size:.95rem;'>{cal['emoji']} {cal['titulo']}</span>"
+            f"<br><span style='font-size:.83rem;color:#3A3F47;'>{cal['resumen']}</span></div>",
+            unsafe_allow_html=True)
 
         cot = s.get("_cot")
         if cot:
@@ -556,31 +591,7 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
             mult = opcion_real.multiplo(s["precio"], cot, s.get("mfe_max") or 0, tp)
             c1, c2 = st.columns(2)
             c1.metric("Arriesgas", f"${pr['costo']}", help="Pérdida máxima (topada)")
-            c2.metric("🚀 Mejor caso", f"×{mult}", help=f"${pr['costo']} → ${round(pr['costo']*mult):,}")
-            # 🎯 RECUPERAR y DOBLAR: PROBABILIDAD + TIEMPO (lo clave para decidir)
-            if "_p_recup" in s:
-                def _pt(p, d):
-                    return f"{p:.0f}% en {_fmt_dias(d)}" if p is not None else "n/d"
-                st.markdown(
-                    f"<div style='background:#EAF3FA;border-radius:8px;padding:7px 10px;font-size:.82rem;color:#1B4965;line-height:1.5;'>"
-                    f"💰 <b>Recuperar (+50%):</b> {_pt(s.get('_p_recup'), s.get('_t_recup'))}<br>"
-                    f"🚀 <b>Doblar (×2):</b> {_pt(s.get('_p_x2'), s.get('_t_x2'))}</div>",
-                    unsafe_allow_html=True)
-            if "_ve" in s:
-                ve = s["_ve"]
-            else:
-                hc = historial(s["ticker"], s["estrategia"])
-                ve = opcion_real.valor_esperado(s["precio"], cot, hc["targets"], s.get("mfe_max") or 0, tp) \
-                    if (hc and not hc.get("sin_datos")) else None
-        else:
-            ve = None
-
-        # UNA sola línea con lo esencial (menos ruido)
-        cf = s.get("confianza", {})
-        nm = s.get("n_muestra", 0)
-        ve_txt = f"💡 VE **×{ve}** · " if ve is not None else ""
-        st.caption(f"{ve_txt}✅ **{s['confiabilidad_pct']:.0f}%** ({nm} casos {cf.get('emoji','')}) · "
-                   f"⚖️ **{s.get('ratio_br','—')}** · 📋 **{s['n_cond']}/5**")
+            c2.metric("Puede llegar a", f"${round(pr['costo']*mult):,}", help=f"Mejor caso histórico (×{mult})")
 
         # --- moonshot (solo si el interruptor está prendido) ---
         if moonshot and cot:
