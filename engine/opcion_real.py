@@ -176,6 +176,24 @@ def prob_de_multiplo(precio: float, cot: dict, targets: dict, n: float, tipo: st
     return round(prob_movimiento(targets, _mov_para_multiplo(precio, cot, n, tipo)))
 
 
+def prob_multiplo_en_dias(precio: float, cot: dict, mfe_dias: dict, n: float,
+                          dias: int, tipo: str = "CALL") -> float:
+    """
+    Probabilidad histórica de que la opción multiplique por `n` DENTRO de `dias` días.
+    Ej: prob de ×2 en 1 día. Usa el movimiento máximo a favor por ventana de días.
+    """
+    if not cot or not cot.get("premium") or not mfe_dias:
+        return 0.0
+    mov_necesario = _mov_para_multiplo(precio, cot, n, tipo)
+    # el arreglo de movimientos máximos dentro de `dias` (o el más cercano disponible)
+    disponibles = sorted(mfe_dias.keys())
+    d = min(disponibles, key=lambda x: abs(x - dias))
+    arr = mfe_dias.get(d) or mfe_dias.get(dias)
+    if not arr:
+        return 0.0
+    return round(sum(1 for m in arr if m >= mov_necesario) / len(arr) * 100)
+
+
 def tiempo_de_multiplo(precio: float, cot: dict, targets: dict, n: float, tipo: str = "CALL"):
     """Días típicos (mediana) para que la opción multiplique por `n`. None si no hay dato."""
     if not cot or not cot.get("premium") or not cot.get("delta"):

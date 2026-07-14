@@ -77,20 +77,23 @@ def historial_senal(ticker: str, estrategia: str, max_ocurrencias: int = 400) ->
                     adv = (entrada - fwd["High"]) / entrada * 100
                 mfe = float(fav.max())    # máximo movimiento a favor
                 mae = float(adv.min())    # peor movimiento en contra
-                # movimiento en el PRIMER DÍA (para "¿cuánto se mueve mañana?")
-                fwd_1d = fwd[fwd.index <= t0 + pd.Timedelta(days=1)]
-                fav_1d = float(fav.loc[fwd_1d.index].max()) if len(fwd_1d) else 0.0
-                adv_1d = float(adv.loc[fwd_1d.index].min()) if len(fwd_1d) else 0.0
+                # máximo movimiento a favor DENTRO de 1, 2, 3, 5 días
+                # (para calcular "prob de ×N dentro de D días" -> los "logros posibles")
+                mfe_por_dia = {}
+                for d in (1, 2, 3, 5):
+                    fwd_d = fwd[fwd.index <= t0 + pd.Timedelta(days=d)]
+                    mfe_por_dia[d] = float(fav.loc[fwd_d.index].max()) if len(fwd_d) else 0.0
+                fav_1d = mfe_por_dia[1]
+                adv_1d = float(adv.loc[fwd[fwd.index <= t0 + pd.Timedelta(days=1)].index].min()) \
+                    if len(fwd[fwd.index <= t0 + pd.Timedelta(days=1)]) else 0.0
                 # tiempo hasta alcanzar cada target
                 dias_target = {}
                 for t in TARGETS:
                     alcanza = fwd[fav >= t]
-                    if len(alcanza):
-                        dias_target[t] = (alcanza.index[0] - t0).total_seconds() / 86400
-                    else:
-                        dias_target[t] = None
-                ocurrencias.append({"mfe": mfe, "mae": mae, "fav_1d": fav_1d,
-                                    "adv_1d": adv_1d, "dias_target": dias_target})
+                    dias_target[t] = ((alcanza.index[0] - t0).total_seconds() / 86400
+                                      if len(alcanza) else None)
+                ocurrencias.append({"mfe": mfe, "mae": mae, "fav_1d": fav_1d, "adv_1d": adv_1d,
+                                    "mfe_por_dia": mfe_por_dia, "dias_target": dias_target})
         i += 1
         if len(ocurrencias) >= max_ocurrencias:
             break
@@ -126,6 +129,8 @@ def historial_senal(ticker: str, estrategia: str, max_ocurrencias: int = 400) ->
         "mae_mediana": float(np.median(maes)),   # en contra típico (riesgo)
         "fav_1d_mediana": float(np.median([o["fav_1d"] for o in ocurrencias])),   # a favor en 1 día
         "adv_1d_mediana": float(np.median([o["adv_1d"] for o in ocurrencias])),   # en contra en 1 día
+        # movimiento a favor por cada ventana de días (para "prob de ×N en D días")
+        "mfe_dias": {d: [o["mfe_por_dia"][d] for o in ocurrencias] for d in (1, 2, 3, 5)},
         "principal": resumen_targets[TARGET_PRINCIPAL],
         "target_principal": TARGET_PRINCIPAL,
     }

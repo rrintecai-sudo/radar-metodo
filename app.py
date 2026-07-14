@@ -576,13 +576,21 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
         st.markdown(f"### {s['ticker']} · {dir_txt}")
         st.caption(f"{s['estrategia_nombre']} · {ritmo}")
 
-        # 🧑‍⚖️ LA CALIFICACIÓN: el tool juzga por ti, en palabras
+        # 🧑‍⚖️ CALIFICACIÓN (palabra) + 🎯 LOGROS POSIBLES (lo puntual que pediste)
         cal = calificar(s)
+        logros = s.get("_logros") or []
+        filas_html = ""
+        for etiqueta, p in logros:
+            col = "#0E7C6B" if p >= 70 else ("#B8860B" if p >= 40 else "#9AA0A6")
+            peso = "800" if "Recuperar" in etiqueta else "600"
+            filas_html += (f"<div style='display:flex;justify-content:space-between;font-size:.85rem;'>"
+                           f"<span style='color:#3A3F47;font-weight:{peso};'>{etiqueta}</span>"
+                           f"<span style='color:{col};font-weight:800;'>{p}%</span></div>")
         st.markdown(
             f"<div style='background:{cal['color']}14;border-left:4px solid {cal['color']};"
-            f"border-radius:8px;padding:7px 11px;margin:2px 0;'>"
-            f"<span style='font-weight:800;color:{cal['color']};font-size:.95rem;'>{cal['emoji']} {cal['titulo']}</span>"
-            f"<br><span style='font-size:.83rem;color:#3A3F47;'>{cal['resumen']}</span></div>",
+            f"border-radius:8px;padding:8px 11px;margin:2px 0;'>"
+            f"<span style='font-weight:800;color:{cal['color']};font-size:.92rem;'>{cal['emoji']} {cal['titulo']}</span>"
+            f"<div style='margin-top:5px;'>{filas_html}</div></div>",
             unsafe_allow_html=True)
 
         cot = s.get("_cot")
@@ -682,6 +690,16 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
         s["_t_x2"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
         s["_p_recup"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
         s["_p_x2"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
+        # 🎯 LOGROS POSIBLES: prob de ×N dentro de D días (lo que Oscar quiere ver)
+        mfe_dias = h.get("mfe_dias") if tiene_h else None
+        s["_logros"] = []
+        if mfe_dias:
+            # escalera realista: recuperar rápido + doblar (en 1 vs varios días)
+            for etiqueta, mult_n, dd in [("Recuperar (+50%) en 1 día", 1.5, 1),
+                                         ("×2 en 1 día", 2, 1),
+                                         ("×2 en 3 días", 2, 3)]:
+                p = opcion_real.prob_multiplo_en_dias(s["precio"], cot, mfe_dias, mult_n, dd, tp)
+                s["_logros"].append((etiqueta, p))
 
     if sum(1 for s in mostrados if s.get("_vale")) == 0:
         st.warning("⏳ **Ninguna de aquí vale la pena hoy** (valor esperado bajo o el premio no "
