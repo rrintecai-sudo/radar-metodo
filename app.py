@@ -580,11 +580,11 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
         cal = calificar(s)
         logros = s.get("_logros") or []
         filas_html = ""
-        for etiqueta, p in logros:
+        for etiqueta, p, t in logros:
             col = "#0E7C6B" if p >= 70 else ("#B8860B" if p >= 40 else "#9AA0A6")
             peso = "800" if "Recuperar" in etiqueta else "600"
             filas_html += (f"<div style='display:flex;justify-content:space-between;font-size:.85rem;'>"
-                           f"<span style='color:#3A3F47;font-weight:{peso};'>{etiqueta}</span>"
+                           f"<span style='color:#3A3F47;font-weight:{peso};'>{etiqueta} <span style='color:#9AA0A6;'>· {_fmt_dias(t)}</span></span>"
                            f"<span style='color:{col};font-weight:800;'>{p}%</span></div>")
         st.markdown(
             f"<div style='background:{cal['color']}14;border-left:4px solid {cal['color']};"
@@ -691,15 +691,14 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
         s["_p_recup"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
         s["_p_x2"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
         # 🎯 LOGROS POSIBLES: prob de ×N dentro de D días (lo que Oscar quiere ver)
-        mfe_dias = h.get("mfe_dias") if tiene_h else None
+        # LOGROS POSIBLES: probabilidad + tiempo típico de cada meta (números honestos)
         s["_logros"] = []
-        if mfe_dias:
-            # escalera realista: recuperar rápido + doblar (en 1 vs varios días)
-            for etiqueta, mult_n, dd in [("Recuperar (+50%) en 1 día", 1.5, 1),
-                                         ("×2 en 1 día", 2, 1),
-                                         ("×2 en 3 días", 2, 3)]:
-                p = opcion_real.prob_multiplo_en_dias(s["precio"], cot, mfe_dias, mult_n, dd, tp)
-                s["_logros"].append((etiqueta, p))
+        if tiene_h:
+            for etiqueta, mult_n in [("Recuperar (+50%)", 1.5), ("Doblar (×2)", 2),
+                                     ("Triplicar (×3)", 3)]:
+                p = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], mult_n, tp)
+                t = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], mult_n, tp)
+                s["_logros"].append((etiqueta, p, t))
 
     if sum(1 for s in mostrados if s.get("_vale")) == 0:
         st.warning("⏳ **Ninguna de aquí vale la pena hoy** (valor esperado bajo o el premio no "
