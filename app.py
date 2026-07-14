@@ -593,6 +593,16 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
             f"<div style='margin-top:5px;'>{filas_html}</div></div>",
             unsafe_allow_html=True)
 
+        # ⚡ MÉTRICA SCALP: prob de +20% EN EL DÍA (para operar y salir el mismo día)
+        ps = s.get("_p_scalp")
+        if ps is not None:
+            intradia = ESTRATEGIAS[s["estrategia"]]["intervalo"] == "1h"
+            sc_col = "#0E7C6B" if (ps >= 45 and intradia) else ("#B8860B" if ps >= 30 else "#9AA0A6")
+            apto = "✅ apta para scalp" if (ps >= 45 and intradia) else ("solo si es rápida" if intradia else "lenta, no ideal para scalp")
+            st.markdown(f"<div style='background:#FFF7E6;border-radius:8px;padding:6px 10px;font-size:.83rem;"
+                        f"color:#7A5B00;'>⚡ <b>+20% en el día: <span style='color:{sc_col};'>{ps}%</span></b> "
+                        f"<span style='color:#9AA0A6;'>· {apto}</span></div>", unsafe_allow_html=True)
+
         cot = s.get("_cot")
         if cot:
             pr = opcion_real.proyeccion(s["precio"], cot, s.get("beneficio_pct") or 2.0)
@@ -691,6 +701,9 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
         s["_p_recup"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
         s["_p_x2"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
         # 🎯 LOGROS POSIBLES: prob de ×N dentro de D días (lo que Oscar quiere ver)
+        # ⚡ SCALP: probabilidad de +20% (×1.2) DENTRO del día (mismo día)
+        s["_p_scalp"] = (opcion_real.prob_multiplo_en_dias(s["precio"], cot, h["mfe_dias"], 1.2, 1, tp)
+                         if (tiene_h and h.get("mfe_dias")) else None)
         # LOGROS POSIBLES: probabilidad + tiempo típico de cada meta (números honestos)
         s["_logros"] = []
         if tiene_h:
@@ -970,9 +983,10 @@ if dashboard:
         f1, f2 = st.columns([1.2, 1.6])
         d_dir = f1.radio("Dirección", ["Ambas", "Solo CALL (sube)", "Solo PUT (baja)"])
         d_orden = f2.radio("Ordenar por",
-                           ["💡 Valor esperado (matemática)", "🎯 Oportunidad (equilibrio)",
-                            "💥 Rentabilidad (más ganancia)", "🛡️ Confiabilidad (más segura)"],
-                           help="Valor esperado = la forma más objetiva: combina probabilidad y ganancia.")
+                           ["⚡ Scalp (+20% en el día)", "💡 Valor esperado (matemática)",
+                            "🎯 Oportunidad (equilibrio)", "💥 Rentabilidad (más ganancia)",
+                            "🛡️ Confiabilidad (más segura)"],
+                           help="Scalp = las que más probable hacen +20% HOY (para entrar y salir el mismo día).")
         g1, g2, g3 = st.columns([1.4, 1, 1])
         d_pres = g1.number_input("💵 Presupuesto máx. por contrato ($) — 0 = sin límite",
                                  min_value=0, max_value=100000, value=0, step=100)
@@ -1007,15 +1021,35 @@ if dashboard:
             s["_ve"] = -1
         return s["_ve"]
 
+    def calcular_scalp(s):
+        """Prob de +20% en el día (para rankear scalp). Guarda el orden en la señal."""
+        o = s["opcion"]
+        cot = cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
+        s["_cot"] = cot
+        hh = historial(s["ticker"], s["estrategia"])
+        if cot and hh and not hh.get("sin_datos") and hh.get("mfe_dias"):
+            p = opcion_real.prob_multiplo_en_dias(s["precio"], cot, hh["mfe_dias"], 1.2, 1, o["tipo"])
+            # bonus a las intradía (son las que de verdad se pueden scalpear el mismo día)
+            intradia = ESTRATEGIAS[s["estrategia"]]["intervalo"] == "1h"
+            s["_scalp_sort"] = p + (15 if intradia else 0)
+        else:
+            s["_scalp_sort"] = -1
+        return s["_scalp_sort"]
+
     for emoji_titulo, subt, indice, keyp in secciones:
         # sin filtro de condiciones: se rankea solo. Piso mínimo 3/5 (automático).
         lista = aplicar_filtros(por_indice[indice], 3, d_dir, not d_incluir_vig, d_orden)
-        # ordenar por Valor Esperado (requiere prima real; se calcula sobre el pool top)
+        # ordenar por Valor Esperado o Scalp (requieren prima real; sobre el pool top)
         if d_orden.startswith("💡") and lista:
             pool = lista[:15]
             for s in pool:
                 calcular_ve(s)
             lista = sorted(pool, key=lambda s: -(s.get("_ve") if s.get("_ve") is not None else -1))
+        elif d_orden.startswith("⚡") and lista:
+            pool = lista[:15]
+            for s in pool:
+                calcular_scalp(s)
+            lista = sorted(pool, key=lambda s: -(s.get("_scalp_sort") if s.get("_scalp_sort") is not None else -1))
         n_ent = len([s for s in por_indice[indice] if s["estado"] == "ENTRADA"])
         st.markdown(f"### {emoji_titulo}")
         st.caption(f"{subt}  ·  🟢 **{n_ent} listas** · toca **Ver ficha ↗** para abrirla en otra pestaña")

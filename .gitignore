@@ -10,6 +10,9 @@ data/cache/
 
 # 🔒 SECRETO: token de Telegram. NUNCA subir esto.
 alertas.json
+
+# 🔒 SECRETO: llaves de Alpaca (papel). NUNCA subir esto.
+alpaca.json
 .streamlit/secrets.toml
 *.docx
 data/bitacora.json

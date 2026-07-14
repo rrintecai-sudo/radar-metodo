@@ -1,0 +1,26 @@
+{
+  "posiciones": {
+    "DIS260731C00097000": {
+      "ticker": "DIS",
+      "contratos_inicial": 1,
+      "contratos_actual": 1,
+      "prima_entrada": 2.05,
+      "pico_plpc": 0.0,
+      "vendido": [],
+      "proceeds": 0.0,
+      "bitacora_id": 1,
+      "fecha": "2026-07-14T09:37"
+    },
+    "XOM260807C00147000": {
+      "ticker": "XOM",
+      "contratos_inicial": 7,
+      "contratos_actual": 7,
+      "prima_entrada": 4.0,
+      "pico_plpc": 0.0,
+      "vendido": [],
+      "proceeds": 0.0,
+      "bitacora_id": 2,
+      "fecha": "2026-07-14T10:36"
+    }
+  }
+}

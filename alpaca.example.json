@@ -1,0 +1,6 @@
+{
+  "_instrucciones": "Copia este archivo como 'alpaca.json' y pega tus llaves de PAPEL de Alpaca (app.alpaca.markets). NO subas alpaca.json a git — ya está protegido en .gitignore.",
+  "api_key_id": "",
+  "api_secret_key": "",
+  "paper": true
+}

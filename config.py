@@ -79,6 +79,38 @@ TICKERS_STOCKS = list(STOCKS.keys())
 STOCKS_SP500 = [t for t, v in STOCKS.items() if v["indice"] == "SP500"]
 STOCKS_FUERA = [t for t, v in STOCKS.items() if v["indice"] == "FUERA"]
 
+# ---------------------------------------------------------------------------
+# 1c) FECHA DE ENTRADA AL S&P 500 — para NO hacer trampa en el laboratorio
+# ---------------------------------------------------------------------------
+# Regla de Cardona: "nunca salir del S&P 500". Al probar el método en el pasado,
+# una acción SOLO se puede operar DESDE que entró al índice — no antes. Si no,
+# cometemos dos trampas: (1) operar algo que no era S&P 500 todavía, y (2) la
+# "trampa del superviviente" (probar las ganadoras de HOY en el pasado, sabiendo
+# ya cuáles triunfaron -> resultado inflado de mentira).
+#
+# Fechas APROXIMADAS (compiladas, no de un feed verificado). Las que de verdad
+# importan en una ventana de ~10 años son las entradas RECIENTES (marcadas ⚠️);
+# las antiguas caen fuera de la ventana y no afectan. Las que están 100% seguras
+# hace décadas usan una fecha piso segura.
+SP500_DESDE = {
+    "AAPL": "1982-11-30", "MSFT": "1994-06-01", "NVDA": "2001-11-30",
+    "AMZN": "2005-11-18", "GOOGL": "2006-03-31", "META": "2013-12-23",
+    "AVGO": "2014-05-08", "NFLX": "2010-12-20", "MU": "1994-09-27",
+    "QCOM": "1999-07-22", "INTC": "1976-01-01", "ADBE": "1997-05-05",
+    "CRM": "2008-09-15", "BA": "1957-03-04", "DIS": "1976-01-01",
+    "JPM": "1975-01-01", "XOM": "1957-03-04",
+    # ⚠️ Entradas recientes — estas SÍ recortan la ventana de prueba:
+    "AMD":  "2017-03-20",   # ⚠️
+    "TSLA": "2020-12-21",   # ⚠️
+    "NOW":  "2019-11-21",   # ⚠️
+    "MRVL": "2021-01-01",   # ⚠️ (fecha aprox, verificar)
+    "UBER": "2023-12-18",   # ⚠️
+    "SMCI": "2024-03-18",   # ⚠️
+    "CRWD": "2024-06-24",   # ⚠️
+    "PLTR": "2024-09-23",   # ⚠️
+    "COIN": "2025-05-19",   # ⚠️
+}
+
 # El universo completo (ETFs base + acciones) con nombre, clase, índice y sector.
 UNIVERSO = dict(ACTIVOS)
 for _t, _v in ACTIVOS.items():
@@ -226,3 +258,21 @@ ESTRATEGIAS = {
 }
 # Estrategias sugeridas para arrancar (las más pausadas).
 ESTRATEGIAS_INICIALES = ["piso_fuerte", "tres_semanas"]
+
+# ---------------------------------------------------------------------------
+# 9) EL BOT DE PAPEL (Alpaca) — opera solo, con primas reales, sin riesgo real
+# ---------------------------------------------------------------------------
+# Tamaño pensado como si el capital REAL fuera este, para que las muestras del
+# papel se parezcan a lo que Oscar haría de verdad (aunque el paper tenga $100k).
+BOT_CAPITAL = 1000            # capital de referencia (para dimensionar como en real)
+BOT_RIESGO_POR_TRADE = 250    # objetivo de $ arriesgados por operación (la prima total)
+BOT_MAX_PRIMA_1_CONTRATO = 400  # si ni 1 contrato cabe pero cuesta <= esto, compra 1; si no, salta
+BOT_MAX_POSICIONES = 4        # cuántas operaciones abiertas a la vez (deja pólvora seca)
+BOT_HORA_INICIO = "10:00"     # no abrir nuevas antes de esta hora ET (spreads anchos al abrir)
+# "Opción barata" = el edge que validó el laboratorio (vol BAJA del activo al entrar).
+# Solo entra si la volatilidad anual del activo está por debajo de esto. Q1 puro fue
+# <=0.28 (+28%); hasta ~0.38 sigue positivo. 0.35 = balance señal/edge.
+BOT_GASOLINA_MAX_VOL = 0.35
+# Salida partida: (ganancia, fracción a vender). El resto CORRE (lo que hace ganar).
+BOT_SALIDA = [(0.30, 1 / 3), (1.00, 1 / 3)]   # +30% vende 1/3, +100% vende 1/3, corre 1/3
+BOT_CORRE_STOP_DESDE_PICO = 0.40   # el pedazo que corre: sale si cae 40% desde su pico

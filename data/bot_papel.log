@@ -1,0 +1,63 @@
+/Users/oscarrodriguez/Documents/ClaudeCode Proyectos/bolsa de valores -app/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Bot en marcha: un ciclo cada 5 min. Ctrl+C para parar.
+
+— Ciclo 09:45 ET · mercado ABIERTO · 1 abiertas —
+Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
+— Ciclo 09:50 ET · mercado ABIERTO · 1 abiertas —
+Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
+— Ciclo 09:55 ET · mercado ABIERTO · 1 abiertas —
+Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
+— Ciclo 10:00 ET · mercado ABIERTO · 1 abiertas —
+   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
+   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
+— Ciclo 10:05 ET · mercado ABIERTO · 1 abiertas —
+   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
+   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
+— Ciclo 10:10 ET · mercado ABIERTO · 1 abiertas —
+   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
+   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
+— Ciclo 10:15 ET · mercado ABIERTO · 1 abiertas —
+   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
+   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
+— Ciclo 10:21 ET · mercado ABIERTO · 1 abiertas —
+   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
+   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
+— Ciclo 10:26 ET · mercado ABIERTO · 1 abiertas —
+   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
+   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
+— Ciclo 10:31 ET · mercado ABIERTO · 1 abiertas —
+   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
+   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
+— Ciclo 10:36 ET · mercado ABIERTO · 1 abiertas —
+➕ Adoptada XOM260807C00147000 x7 @ $4.00 (riesgo $2800)
+   ⏭️  BA CALL: opción muy cara ($518/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
+— Ciclo 10:41 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  BA CALL: opción muy cara ($632/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1298/contrato), salto
+— Ciclo 10:46 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  BA CALL: opción muy cara ($618/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1292/contrato), salto
+— Ciclo 10:51 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  BA CALL: opción muy cara ($635/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1292/contrato), salto
+— Ciclo 10:56 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  BA CALL: opción muy cara ($630/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1340/contrato), salto
+— Ciclo 11:01 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  BA CALL: opción muy cara ($642/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1378/contrato), salto
+— Ciclo 11:06 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  BA CALL: opción muy cara ($660/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1415/contrato), salto
+— Ciclo 11:11 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  BA CALL: opción muy cara ($678/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($1423/contrato), salto
