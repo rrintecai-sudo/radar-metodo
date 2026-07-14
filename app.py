@@ -595,13 +595,23 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
 
         # ⚡ MÉTRICA SCALP: prob de +20% EN EL DÍA (para operar y salir el mismo día)
         ps = s.get("_p_scalp")
+        intradia = ESTRATEGIAS[s["estrategia"]]["intervalo"] == "1h"
         if ps is not None:
-            intradia = ESTRATEGIAS[s["estrategia"]]["intervalo"] == "1h"
             sc_col = "#0E7C6B" if (ps >= 45 and intradia) else ("#B8860B" if ps >= 30 else "#9AA0A6")
             apto = "✅ apta para scalp" if (ps >= 45 and intradia) else ("solo si es rápida" if intradia else "lenta, no ideal para scalp")
             st.markdown(f"<div style='background:#FFF7E6;border-radius:8px;padding:6px 10px;font-size:.83rem;"
                         f"color:#7A5B00;'>⚡ <b>+20% en el día: <span style='color:{sc_col};'>{ps}%</span></b> "
                         f"<span style='color:#9AA0A6;'>· {apto}</span></div>", unsafe_allow_html=True)
+
+        # 🧭 PLAN SUGERIDO: el tool decide por ti — SCALP o ASIMETRÍA
+        if intradia and (ps or 0) >= 45:
+            plan_tit, plan_txt, plan_col = "⚡ PLAN: SCALP", "Entra → sal en +20% o corta en −20%, el MISMO día", "#0E7C6B"
+        else:
+            plan_tit, plan_txt, plan_col = "🎪 PLAN: ASIMETRÍA", "Entra → deja correr al +50%, aguanta días, pérdida topada en la prima", "#7A4E9E"
+        st.markdown(f"<div style='background:{plan_col}14;border-radius:8px;padding:6px 10px;margin-top:4px;'>"
+                    f"<b style='color:{plan_col};font-size:.86rem;'>{plan_tit}</b>"
+                    f"<br><span style='font-size:.78rem;color:#3A3F47;'>{plan_txt}</span></div>",
+                    unsafe_allow_html=True)
 
         cot = s.get("_cot")
         if cot:
