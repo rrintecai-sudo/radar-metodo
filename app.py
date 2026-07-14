@@ -518,6 +518,16 @@ def render_ficha_pagina(ticker: str, est: str):
         tarjeta(s)
 
 
+def _fmt_dias(d) -> str:
+    if d is None:
+        return "n/d"
+    if d < 0.4:
+        return "horas"
+    if d < 1.5:
+        return "~1 día"
+    return f"~{d:.0f} días"
+
+
 def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
     """Tarjeta corta y limpia: lo esencial de un vistazo."""
     nivel, badge = accion_badge(s)
@@ -547,6 +557,13 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
             c1, c2 = st.columns(2)
             c1.metric("Arriesgas", f"${pr['costo']}", help="Pérdida máxima (topada)")
             c2.metric("🚀 Mejor caso", f"×{mult}", help=f"${pr['costo']} → ${round(pr['costo']*mult):,}")
+            # ⏱️ TIEMPOS (lo que Oscar necesita ver): recuperar y doblar
+            if "_t_recup" in s or "_t_x2" in s:
+                st.markdown(
+                    f"<div style='background:#EAF3FA;border-radius:8px;padding:6px 9px;font-size:.82rem;color:#1B4965;'>"
+                    f"⏱️ Recuperas (+50%) en <b>{_fmt_dias(s.get('_t_recup'))}</b>"
+                    f" · doblas (×2) en <b>{_fmt_dias(s.get('_t_x2'))}</b></div>",
+                    unsafe_allow_html=True)
             if "_ve" in s:
                 ve = s["_ve"]
             else:
@@ -640,12 +657,15 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
             continue
         tp = s["opcion"]["tipo"]
         h = historial(s["ticker"], s["estrategia"])
-        ve = (opcion_real.valor_esperado(s["precio"], cot, h["targets"], s.get("mfe_max") or 0, tp)
-              if (h and not h.get("sin_datos")) else None)
+        tiene_h = h and not h.get("sin_datos")
+        ve = opcion_real.valor_esperado(s["precio"], cot, h["targets"], s.get("mfe_max") or 0, tp) if tiene_h else None
         mult = opcion_real.multiplo(s["precio"], cot, s.get("mfe_max") or 0, tp)
         umbral = max(PREMIO_PISO_ABSOLUTO, PREMIO_MINIMO_POR_ESTRATEGIA.get(s["estrategia"], 1.5))
         s["_ve"] = ve
         s["_vale"] = bool(ve is not None and ve >= 1.2 and mult >= umbral)
+        # TIEMPOS: recuperar (+50% = ×1.5) y doblar (×2)
+        s["_t_recup"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
+        s["_t_x2"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
 
     if sum(1 for s in mostrados if s.get("_vale")) == 0:
         st.warning("⏳ **Ninguna de aquí vale la pena hoy** (valor esperado bajo o el premio no "
