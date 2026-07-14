@@ -557,12 +557,14 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
             c1, c2 = st.columns(2)
             c1.metric("Arriesgas", f"${pr['costo']}", help="Pérdida máxima (topada)")
             c2.metric("🚀 Mejor caso", f"×{mult}", help=f"${pr['costo']} → ${round(pr['costo']*mult):,}")
-            # ⏱️ TIEMPOS (lo que Oscar necesita ver): recuperar y doblar
-            if "_t_recup" in s or "_t_x2" in s:
+            # 🎯 RECUPERAR y DOBLAR: PROBABILIDAD + TIEMPO (lo clave para decidir)
+            if "_p_recup" in s:
+                def _pt(p, d):
+                    return f"{p:.0f}% en {_fmt_dias(d)}" if p is not None else "n/d"
                 st.markdown(
-                    f"<div style='background:#EAF3FA;border-radius:8px;padding:6px 9px;font-size:.82rem;color:#1B4965;'>"
-                    f"⏱️ Recuperas (+50%) en <b>{_fmt_dias(s.get('_t_recup'))}</b>"
-                    f" · doblas (×2) en <b>{_fmt_dias(s.get('_t_x2'))}</b></div>",
+                    f"<div style='background:#EAF3FA;border-radius:8px;padding:7px 10px;font-size:.82rem;color:#1B4965;line-height:1.5;'>"
+                    f"💰 <b>Recuperar (+50%):</b> {_pt(s.get('_p_recup'), s.get('_t_recup'))}<br>"
+                    f"🚀 <b>Doblar (×2):</b> {_pt(s.get('_p_x2'), s.get('_t_x2'))}</div>",
                     unsafe_allow_html=True)
             if "_ve" in s:
                 ve = s["_ve"]
@@ -663,9 +665,11 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
         umbral = max(PREMIO_PISO_ABSOLUTO, PREMIO_MINIMO_POR_ESTRATEGIA.get(s["estrategia"], 1.5))
         s["_ve"] = ve
         s["_vale"] = bool(ve is not None and ve >= 1.2 and mult >= umbral)
-        # TIEMPOS: recuperar (+50% = ×1.5) y doblar (×2)
+        # RECUPERAR (+50% = ×1.5) y DOBLAR (×2): probabilidad Y tiempo
         s["_t_recup"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
         s["_t_x2"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
+        s["_p_recup"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
+        s["_p_x2"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
 
     if sum(1 for s in mostrados if s.get("_vale")) == 0:
         st.warning("⏳ **Ninguna de aquí vale la pena hoy** (valor esperado bajo o el premio no "
