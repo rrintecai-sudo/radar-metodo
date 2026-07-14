@@ -112,6 +112,41 @@ def earnings_ctx(ticker: str, dias_ventana: int, es_accion: bool) -> dict:
 
 
 @st.cache_data(ttl=300, show_spinner=False)
+def chequear_senal(ticker: str, direccion: str) -> tuple[str, str]:
+    """
+    ¿El motor sigue A FAVOR de una posición abierta, o se volteó EN CONTRA?
+    Compara la dirección de tu posición con lo que el motor ve AHORA.
+    """
+    favor_ent = favor_vig = contra_ent = contra_vig = False
+    for est in ESTRATEGIAS:
+        iv = ESTRATEGIAS[est]["intervalo"]
+        try:
+            df = method.preparar(data.obtener(ticker, iv))
+            s = method.evaluar(ticker, df, est)
+        except Exception:
+            continue
+        if s["estado"] == "ENTRADA":
+            if s["direccion"] == direccion:
+                favor_ent = True
+            else:
+                contra_ent = True
+        elif s["estado"] == "VIGILAR":
+            if s["direccion"] == direccion:
+                favor_vig = True
+            else:
+                contra_vig = True
+    if favor_ent:
+        return "favor", "✅ Señal A FAVOR (confirmada) — tu dirección sigue vigente"
+    if contra_ent and not favor_vig:
+        return "contra", "⚠️ SEÑAL EN CONTRA — el motor se volteó. Considera CORTAR"
+    if favor_vig:
+        return "favor", "🟡 Señal a favor (vigilando) — sigue de tu lado"
+    if contra_vig:
+        return "contra", "⚠️ Señal virando EN CONTRA — ojo, vigila de cerca"
+    return "neutral", "🔕 Señal enfriada — el motivo del método ya no está activo"
+
+
+@st.cache_data(ttl=300, show_spinner=False)
 def cotizacion(ticker: str, tipo: str, strike: float, dias: int) -> dict | None:
     return opcion_real.cotizar(ticker, tipo, strike, dias)
 
@@ -791,6 +826,12 @@ def render_bitacora():
                             f"prima entrada **${t['prima_entrada']}** · {t['contratos']} contrato(s)")
                 st.caption(f"{t['fecha_entrada']} · {ESTRATEGIAS.get(t['estrategia'],{}).get('nombre','')}"
                            + (f" · {t['nota']}" if t['nota'] else ""))
+                # 🚦 CHEQUEO DE SEÑAL: ¿el motor sigue a favor o se volteó?
+                niv, txt = chequear_senal(t["ticker"], t["direccion"])
+                col = {"favor": "#0E7C6B", "contra": "#C0392B", "neutral": "#8A8578"}[niv]
+                st.markdown(f"<div style='background:{col}14;border-left:4px solid {col};border-radius:6px;"
+                            f"padding:5px 10px;font-size:.85rem;color:{col};font-weight:600;'>{txt}</div>",
+                            unsafe_allow_html=True)
                 cc = st.columns([2, 1, 1])
                 ps = cc[0].number_input("Prima de SALIDA ($)", min_value=0.0, step=0.05, key=f"ps_{t['id']}")
                 if cc[1].button("✓ Cerrar", key=f"cerrar_{t['id']}", use_container_width=True):
