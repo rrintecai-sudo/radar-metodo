@@ -12,3 +12,4 @@ data/cache/
 alertas.json
 .streamlit/secrets.toml
 *.docx
+data/bitacora.json

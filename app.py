@@ -25,6 +25,7 @@ from streamlit_autorefresh import st_autorefresh
 
 from engine import data, method, viz, backtest, premarket, screener, earnings, notify, opcion_real
 from engine import calendar as cal
+from engine import bitacora
 from engine import zones as zn
 
 st.set_page_config(page_title="Radar del Método", page_icon="📈", layout="wide")
@@ -693,6 +694,98 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
     return len(mostrados)
 
 
+def render_bitacora():
+    st.markdown(CABECERA, unsafe_allow_html=True)
+    st.markdown("## 📔 Bitácora")
+    libro = st.radio("Libro", ["simulacion", "real"], horizontal=True,
+                     format_func=lambda x: "📝 Simulación (papel)" if x == "simulacion" else "💵 Real")
+
+    # --- métricas (la estrella: la EXPECTATIVA) ---
+    m = bitacora.metricas(libro)
+    if m["n"] == 0:
+        st.info("Aún no hay operaciones **cerradas** en este libro. Registra abajo y ciérralas al salir. "
+                "Con 15-20 operaciones ya verás si el método te da dinero.")
+    else:
+        c = st.columns(4)
+        c[0].metric("Operaciones", m["n"])
+        c[1].metric("% Acierto", f"{m['win_rate']:.0f}%")
+        exp = m["expectativa"]
+        c[2].metric("💡 Expectativa/op", f"{exp:+.0f}%")
+        c[3].metric("Resultado total", f"${m['total_usd']:+,.0f}")
+        st.caption(f"Ganancia media **+{m['avg_win']:.0f}%** · Pérdida media **{m['avg_loss']:.0f}%** · "
+                   f"{m['ganadoras']} ✅ / {m['perdedoras']} ❌")
+        if exp > 0:
+            st.success(f"💡 **Expectativa POSITIVA (+{exp:.0f}% por operación):** en el conjunto, el método "
+                       "te está dando dinero. Aunque pierdas varias, las ganadoras pagan de más.")
+        else:
+            st.warning(f"💡 **Expectativa negativa ({exp:.0f}%):** por ahora el conjunto no da. Sigue "
+                       "registrando (la muestra es chica) o hay que afinar el método.")
+
+    # --- registrar operación nueva ---
+    with st.expander("➕ Registrar operación nueva", expanded=(m["n"] == 0)):
+        with st.form("nueva_op", clear_on_submit=True):
+            col = st.columns(3)
+            ticker = col[0].text_input("Activo (ej. XOM)")
+            direccion = col[1].selectbox("Dirección", ["call", "put"])
+            estrategia = col[2].selectbox("Estrategia", list(ESTRATEGIAS.keys()),
+                                          format_func=lambda e: ESTRATEGIAS[e]["nombre"])
+            col2 = st.columns(3)
+            strike = col2[0].number_input("Strike", min_value=0.0, step=1.0)
+            prima = col2[1].number_input("Prima pagada ($/acción)", min_value=0.0, step=0.05)
+            contratos = col2[2].number_input("Contratos", min_value=1, value=1, step=1)
+            nota = st.text_input("Nota (por qué entraste)")
+            if st.form_submit_button("Registrar"):
+                if ticker and prima > 0:
+                    bitacora.agregar(libro, ticker, direccion, estrategia, strike, prima, contratos, nota)
+                    st.rerun()
+                else:
+                    st.error("Pon al menos el activo y la prima pagada.")
+
+    # --- operaciones abiertas (para cerrar) ---
+    abiertas = bitacora.listar(libro, "abierta")
+    if abiertas:
+        st.markdown("### Abiertas (ciérralas al salir)")
+        for t in abiertas:
+            with st.container(border=True):
+                st.markdown(f"**{t['ticker']} · {t['direccion'].upper()}** · strike {t['strike']} · "
+                            f"prima entrada **${t['prima_entrada']}** · {t['contratos']} contrato(s)")
+                st.caption(f"{t['fecha_entrada']} · {ESTRATEGIAS.get(t['estrategia'],{}).get('nombre','')}"
+                           + (f" · {t['nota']}" if t['nota'] else ""))
+                cc = st.columns([2, 1, 1])
+                ps = cc[0].number_input("Prima de SALIDA ($)", min_value=0.0, step=0.05, key=f"ps_{t['id']}")
+                if cc[1].button("✓ Cerrar", key=f"cerrar_{t['id']}", use_container_width=True):
+                    bitacora.cerrar(t["id"], ps)
+                    st.rerun()
+                if cc[2].button("🗑️", key=f"del_{t['id']}", use_container_width=True):
+                    bitacora.eliminar(t["id"])
+                    st.rerun()
+
+    # --- historial cerradas ---
+    cerradas = bitacora.listar(libro, "cerrada")
+    if cerradas:
+        st.markdown("### Historial")
+        filas = [{
+            "Activo": t["ticker"], "Dir": t["direccion"].upper(),
+            "Estrategia": ESTRATEGIAS.get(t["estrategia"], {}).get("nombre", t["estrategia"]),
+            "Prima ent.": f"${t['prima_entrada']}", "Prima sal.": f"${t['prima_salida']}",
+            "Resultado": f"{t['resultado_pct']:+.0f}%", "Dinero": f"${t['resultado_usd']:+.0f}",
+            "Fecha": (t["fecha_entrada"] or "")[:10],
+        } for t in cerradas]
+        st.dataframe(pd.DataFrame(filas), hide_index=True, use_container_width=True)
+
+    # --- guardar / restaurar (importante en la nube) ---
+    with st.expander("💾 Guardar / restaurar bitácora (¡descárgala seguido!)"):
+        st.caption("En la nube, la bitácora puede borrarse al reiniciar. Descárgala para no perderla; "
+                   "y súbela para restaurarla.")
+        st.download_button("⬇️ Descargar bitácora (CSV)", bitacora.exportar_csv(),
+                           "bitacora.csv", "text/csv")
+        up = st.file_uploader("⬆️ Restaurar desde CSV (reemplaza todo)", type="csv")
+        if up is not None:
+            n = bitacora.importar_csv(up.getvalue().decode())
+            st.success(f"Restauradas {n} operaciones.")
+            st.rerun()
+
+
 # ---------------------------------------------------------------------------
 # UI
 # ---------------------------------------------------------------------------
@@ -760,10 +853,10 @@ with st.sidebar:
     st.header("Ajustes")
     universo_modo = st.radio(
         "Vista",
-        ["🏠 Dashboard (3 universos)", "Método puro: S&P 500",
+        ["🏠 Dashboard (3 universos)", "📔 Bitácora", "Método puro: S&P 500",
          "Motor paralelo: fuera del S&P 500", "Solo ETFs base (5)"],
-        help="Dashboard: los tres universos juntos en secciones. "
-             "Las otras vistas son para enfocarte en uno solo.")
+        help="Dashboard: oportunidades. Bitácora: registra y mide tus operaciones.")
+    bitacora_mode = universo_modo.startswith("📔")
     dashboard = universo_modo.startswith("🏠")
     ampliado = dashboard or not universo_modo.startswith("Solo ETFs")
     universo_tickers = UNIVERSO_NUCLEO if universo_modo.startswith("Método") else UNIVERSO_PARALELO
@@ -829,6 +922,12 @@ def panel_calendario():
             } for e in caldata["proximos"]]
             st.dataframe(pd.DataFrame(filas), hide_index=True, use_container_width=True)
             st.caption("Fuente: faireconomy (Forex Factory). CPI = inflación · FOMC/Fed = tasas · NFP = empleo.")
+
+
+# =====================  MODO: BITÁCORA  =====================
+if bitacora_mode:
+    render_bitacora()
+    st.stop()
 
 
 # =====================  MODO: DASHBOARD (3 UNIVERSOS)  =====================
