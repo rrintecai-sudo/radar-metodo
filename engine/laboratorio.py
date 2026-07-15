@@ -104,17 +104,23 @@ def cargar_largo(ticker: str, intervalo: str = "1d", periodo: str = "10y",
 # Simulación de UNA operación
 # ---------------------------------------------------------------------------
 def simular_operacion(df: pd.DataFrame, i: int, estrategia: str, direccion: str,
-                      escenario_vol: float = 1.0) -> dict | None:
+                      escenario_vol: float = 1.0, otm_pct: float | None = None) -> dict | None:
     """
     Simula la compra de la opción en la barra `i` y su vida hasta el vencimiento,
     aplicando la regla del método. Devuelve el resultado o None si no se puede.
+
+    `otm_pct`: si se da, usa ese % fuera del dinero para el strike (para probar
+    opciones más baratas/agresivas). Si es None, usa el del método (config).
     """
     S0 = float(df.iloc[i]["Close"])
     t0 = df.index[i]
     opt = sugerir_opcion(S0, direccion, estrategia)
-    K = opt["strike"]
     dias = opt["dias_vencimiento"]
     tipo = opt["tipo"]
+    if otm_pct is None:
+        K = opt["strike"]
+    else:
+        K = round(S0 * (1 + otm_pct / 100), 2) if tipo == "CALL" else round(S0 * (1 - otm_pct / 100), 2)
 
     sigma = _iv_estimada(df["Close"].iloc[: i + 1], escenario_vol)
     T0 = dias / 365.0
@@ -184,7 +190,8 @@ def simular_operacion(df: pd.DataFrame, i: int, estrategia: str, direccion: str,
 # ---------------------------------------------------------------------------
 def simular_ticker(ticker: str, estrategia: str, periodo: str = "10y",
                    escenario_vol: float = 1.0, min_sep_barras: int = 2,
-                   max_trades: int = 2000, desde: str | None = None) -> list[dict]:
+                   max_trades: int = 2000, desde: str | None = None,
+                   otm_pct: float | None = None) -> list[dict]:
     """
     Encuentra cada ENTRADA histórica de esta estrategia y simula la operación.
 
@@ -220,7 +227,7 @@ def simular_ticker(ticker: str, estrategia: str, periodo: str = "10y",
             i += 1
             continue
         if s["estado"] == "ENTRADA" and (i - ultima) > min_sep_barras:
-            op = simular_operacion(df, i, estrategia, s["direccion"], escenario_vol)
+            op = simular_operacion(df, i, estrategia, s["direccion"], escenario_vol, otm_pct)
             if op:
                 op["ticker"] = ticker
                 trades.append(op)
@@ -236,7 +243,7 @@ def simular_ticker(ticker: str, estrategia: str, periodo: str = "10y",
 # ---------------------------------------------------------------------------
 def correr(tickers: list[str], estrategias: list[str], periodo: str = "10y",
            escenario_vol: float = 1.0, verbose: bool = True,
-           desde_por_ticker: dict | None = None) -> pd.DataFrame:
+           desde_por_ticker: dict | None = None, otm_pct: float | None = None) -> pd.DataFrame:
     """
     Corre todas las combinaciones ticker×estrategia y junta todas las operaciones.
 
@@ -250,7 +257,7 @@ def correr(tickers: list[str], estrategias: list[str], periodo: str = "10y",
     for t in tickers:
         desde = desde_por_ticker.get(t)
         for est in estrategias:
-            trades = simular_ticker(t, est, periodo, escenario_vol, desde=desde)
+            trades = simular_ticker(t, est, periodo, escenario_vol, desde=desde, otm_pct=otm_pct)
             filas.extend(trades)
             hecho += 1
             if verbose:

@@ -15,12 +15,43 @@ coincida — eso se refleja en el score y en el estado de la señal.
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import pandas as pd
 
 from config import (ESTRATEGIAS, PESOS_CONFLUENCIA, UMBRAL_SENAL)
 from engine import indicators as ind
 from engine import zones as zn
 from engine.options import sugerir_opcion
+
+# Nueva York (verano). La regla de horarios de Cardona se mide en hora ET.
+ET = timezone(timedelta(hours=-4))
+# Regla de Cardona: nunca comprar calls antes de las 11am. Solo cuenta la señal
+# cuando la vela horaria que la confirma YA CERRÓ a las 11 o después.
+HORA_MINIMA_CALL = 11.0
+
+
+def _vela_final_intradia(df: pd.DataFrame, intervalo: str, ahora: datetime) -> tuple[pd.DataFrame, float | None]:
+    """
+    Aplica dos reglas de Cardona sobre datos horarios:
+      1) Vela FINAL: descarta la vela de la hora en curso (aún en formación).
+      2) Devuelve la hora ET de CIERRE de la última vela ya cerrada (para el
+         candado de las 11am). None si no es intradía o no se pudo calcular.
+    En datos históricos (backtest) no recorta nada: todas las velas ya cerraron.
+    """
+    if intervalo != "1h" or len(df) < 3:
+        return df, None
+    try:
+        idx = df.index
+        idx_et = idx.tz_convert(ET) if idx.tz is not None else idx.tz_localize(ET)
+        cierre = idx_et + pd.Timedelta(hours=1)          # yfinance etiqueta por inicio
+        cerradas = cierre <= ahora                        # solo velas ya terminadas
+        df2 = df[cerradas] if cerradas.any() else df
+        ult_cierre = (idx_et[cerradas][-1] + pd.Timedelta(hours=1)) if cerradas.any() else None
+        hora_cierre = (ult_cierre.hour + ult_cierre.minute / 60.0) if ult_cierre is not None else None
+        return df2, hora_cierre
+    except Exception:
+        return df, None
 
 
 def _nuevo_checklist() -> dict:
@@ -212,10 +243,25 @@ def evaluar(ticker: str, df: pd.DataFrame, estrategia: str) -> dict:
 
     `df` debe traer ya las columnas de promedios móviles (usa preparar()).
     """
+    intervalo = ESTRATEGIAS[estrategia].get("intervalo", "1d")
+    ahora = datetime.now(ET)
+    # Reglas de horario de Cardona (solo intradía): vela final + candado 11am.
+    df, hora_cierre = _vela_final_intradia(df, intervalo, ahora)
+
     r = _EVALUADORES[estrategia](df)
     chk = r["checklist"]
     score = _score(chk)
     estado = _estado(score, chk)
+
+    # CANDADO DE HORARIO: nunca una ENTRADA de call antes de las 11am ET.
+    # Si la vela que confirma cerró antes de las 11, se degrada a VIGILAR.
+    aviso_horario = None
+    if intervalo == "1h" and estado == "ENTRADA" and hora_cierre is not None \
+            and hora_cierre < HORA_MINIMA_CALL:
+        estado = "VIGILAR"
+        aviso_horario = ("⏳ Antes de las 11am ET — regla de Cardona: espera. "
+                         "La vela de las 10 y la primera vela verde engañan.")
+
     ult = df.iloc[-1]
     hoy = df.index[-1]
 
@@ -239,6 +285,7 @@ def evaluar(ticker: str, df: pd.DataFrame, estrategia: str) -> dict:
         "cumplidos": cumplidos,
         "faltan": faltan,
         "opcion": opcion,
+        "aviso_horario": aviso_horario,   # regla 11am de Cardona (None si no aplica)
         "geo": r.get("geo", {}),   # geometría que usó el motor, para dibujarla
     }
 

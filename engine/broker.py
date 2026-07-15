@@ -112,6 +112,17 @@ def vender(option_symbol: str, contratos: int = 1, limit_price: float | None = N
     return _orden(option_symbol, contratos, OrderSide.SELL, limit_price)
 
 
+def ordenes_abiertas() -> list[str]:
+    """Símbolos con órdenes AÚN pendientes (para no apilar compras sobre lo mismo)."""
+    from alpaca.trading.requests import GetOrdersRequest
+    from alpaca.trading.enums import QueryOrderStatus
+    try:
+        os = _trading().get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN, limit=100))
+        return [o.symbol for o in os]
+    except Exception:
+        return []
+
+
 def posiciones() -> list[dict]:
     """Posiciones abiertas (paper)."""
     out = []

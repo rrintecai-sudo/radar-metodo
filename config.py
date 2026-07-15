@@ -269,6 +269,14 @@ BOT_RIESGO_POR_TRADE = 250    # objetivo de $ arriesgados por operación (la pri
 BOT_MAX_PRIMA_1_CONTRATO = 400  # si ni 1 contrato cabe pero cuesta <= esto, compra 1; si no, salta
 BOT_MAX_POSICIONES = 4        # cuántas operaciones abiertas a la vez (deja pólvora seca)
 BOT_HORA_INICIO = "10:00"     # no abrir nuevas antes de esta hora ET (spreads anchos al abrir)
+# Strike: el laboratorio (10 años, 4500 muestras) mostró que comprar MÁS barato/lejos
+# (6% OTM) sube el ROI de +2% a +14% — menos aciertos pero colas mucho más gordas (×10
+# pasa de 0.2% a 1.6%). Es la asimetría pura. Y de paso caben en el capital chico.
+BOT_OTM_PCT = 6.0
+# Estrategias del bot. Las diarias están validadas por el laboratorio. Las intradía
+# (ma40/canal) NO se pueden validar en el laboratorio (Yahoo no da histórico horario);
+# se prueban HACIA ADELANTE en papel = EXPERIMENTO vigilado (y dan actividad diaria).
+BOT_ESTRATEGIAS = ["piso_fuerte", "tres_semanas", "ma40", "canal"]
 # "Opción barata" = el edge que validó el laboratorio (vol BAJA del activo al entrar).
 # Solo entra si la volatilidad anual del activo está por debajo de esto. Q1 puro fue
 # <=0.28 (+28%); hasta ~0.38 sigue positivo. 0.35 = balance señal/edge.

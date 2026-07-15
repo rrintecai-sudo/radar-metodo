@@ -2,116 +2,439 @@
   warnings.warn(
 Bot en marcha: un ciclo cada 5 min. Ctrl+C para parar.
 
-— Ciclo 09:45 ET · mercado ABIERTO · 1 abiertas —
+— Ciclo 14:20 ET · mercado ABIERTO · 1 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($750/contrato), salto
+— Ciclo 14:26 ET · mercado ABIERTO · 1 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($750/contrato), salto
+— Ciclo 14:31 ET · mercado ABIERTO · 1 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($720/contrato), salto
+— Ciclo 14:36 ET · mercado ABIERTO · 1 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($730/contrato), salto
+— Ciclo 14:41 ET · mercado ABIERTO · 1 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($730/contrato), salto
+— Ciclo 14:47 ET · mercado ABIERTO · 1 abiertas —
+   🟢 COMPRÉ 1x SPY260727P00685000 (~$295, lím $0.00) → OrderStatus.PENDING_NEW
+   ⏭️  GOOGL CALL: opción muy cara ($730/contrato), salto
+— Ciclo 14:52 ET · mercado ABIERTO · 1 abiertas —
+➕ Adoptada SPY260727P00685000 x1 @ $0.21 (riesgo $21)
+   ⏭️  GOOGL CALL: opción muy cara ($730/contrato), salto
+— Ciclo 14:57 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($735/contrato), salto
+— Ciclo 15:03 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($735/contrato), salto
+— Ciclo 15:08 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  QQQ PUT: opción muy cara ($972/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($735/contrato), salto
+— Ciclo 15:13 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  QQQ PUT: opción muy cara ($972/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($735/contrato), salto
+— Ciclo 15:18 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  QQQ PUT: opción muy cara ($973/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($728/contrato), salto
+— Ciclo 15:23 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  QQQ PUT: opción muy cara ($973/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($745/contrato), salto
+— Ciclo 15:28 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  QQQ PUT: opción muy cara ($973/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($760/contrato), salto
+— Ciclo 15:34 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  QQQ PUT: opción muy cara ($973/contrato), salto
+   ⏭️  GOOGL CALL: opción muy cara ($765/contrato), salto
+— Ciclo 15:39 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($772/contrato), salto
+— Ciclo 15:44 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($765/contrato), salto
+— Ciclo 15:49 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($795/contrato), salto
+— Ciclo 15:55 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($795/contrato), salto
+— Ciclo 16:00 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:05 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:10 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:15 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:20 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:25 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:30 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:35 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:40 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:45 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:50 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:55 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:00 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:05 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:10 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:15 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:20 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:25 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:30 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:35 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:40 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:45 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:50 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:55 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:00 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:05 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:10 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:15 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:20 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:26 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:33 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:57 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 19:12 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 19:36 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 21:31 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 22:24 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 23:01 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 01:01 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+[bot] error en el ciclo: HTTPSConnectionPool(host='paper-api.alpaca.markets', port=443): Max retries exceeded with url: /v2/clock (Caused by NameResolutionError("HTTPSConnection(host='paper-api.alpaca.markets', port=443): Failed to resolve 'paper-api.alpaca.markets' ([Errno 8] nodename nor servname provided, or not known)"))
+— Ciclo 04:46 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 05:44 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:03 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:08 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:13 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:18 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:23 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:28 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:33 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:38 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:43 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:48 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:53 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 06:58 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:03 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:08 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:13 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:18 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:38 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:43 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:48 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:53 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 07:58 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:03 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:08 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:13 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:18 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:23 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:30 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:35 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:40 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:45 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:50 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 08:55 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 09:00 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 09:05 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 09:11 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 09:16 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 09:21 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 09:26 ET · mercado cerrado · 2 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 09:31 ET · mercado ABIERTO · 2 abiertas —
 Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
-— Ciclo 09:50 ET · mercado ABIERTO · 1 abiertas —
+— Ciclo 09:36 ET · mercado ABIERTO · 2 abiertas —
 Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
-— Ciclo 09:55 ET · mercado ABIERTO · 1 abiertas —
+— Ciclo 09:41 ET · mercado ABIERTO · 2 abiertas —
 Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
-— Ciclo 10:00 ET · mercado ABIERTO · 1 abiertas —
-   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
-   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
-— Ciclo 10:05 ET · mercado ABIERTO · 1 abiertas —
-   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
-   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
-— Ciclo 10:10 ET · mercado ABIERTO · 1 abiertas —
-   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
-   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
-— Ciclo 10:15 ET · mercado ABIERTO · 1 abiertas —
-   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
-   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
-— Ciclo 10:21 ET · mercado ABIERTO · 1 abiertas —
-   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
-   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
-— Ciclo 10:26 ET · mercado ABIERTO · 1 abiertas —
-   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
-   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
-— Ciclo 10:31 ET · mercado ABIERTO · 1 abiertas —
-   🟢 COMPRÉ 1x XOM260807C00147000 (~$398, lím $4.02) → OrderStatus.PENDING_NEW
-   ⏭️  GLD CALL: opción muy cara ($521/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
-— Ciclo 10:36 ET · mercado ABIERTO · 1 abiertas —
-➕ Adoptada XOM260807C00147000 x7 @ $4.00 (riesgo $2800)
-   ⏭️  BA CALL: opción muy cara ($518/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1250/contrato), salto
-— Ciclo 10:41 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($632/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1298/contrato), salto
-— Ciclo 10:46 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($618/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1292/contrato), salto
-— Ciclo 10:51 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($635/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1292/contrato), salto
-— Ciclo 10:56 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($630/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1340/contrato), salto
-— Ciclo 11:01 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($642/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1378/contrato), salto
-— Ciclo 11:06 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($660/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1415/contrato), salto
-— Ciclo 11:11 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($678/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1423/contrato), salto
-— Ciclo 11:16 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($662/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1405/contrato), salto
-— Ciclo 11:21 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($652/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1405/contrato), salto
-— Ciclo 11:26 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($670/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1410/contrato), salto
-— Ciclo 11:31 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($648/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1430/contrato), salto
-— Ciclo 11:36 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($655/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1235/contrato), salto
-— Ciclo 11:42 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($678/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1242/contrato), salto
-— Ciclo 11:47 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($660/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1262/contrato), salto
-— Ciclo 11:52 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($655/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1262/contrato), salto
-— Ciclo 11:57 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($655/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1235/contrato), salto
-— Ciclo 12:02 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($660/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1245/contrato), salto
-— Ciclo 12:07 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($655/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1248/contrato), salto
+— Ciclo 09:46 ET · mercado ABIERTO · 2 abiertas —
+Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
+— Ciclo 09:51 ET · mercado ABIERTO · 2 abiertas —
+Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
+— Ciclo 09:56 ET · mercado ABIERTO · 2 abiertas —
+Mercado abierto pero antes de 10:00 ET: espero (spreads anchos).
+— Ciclo 10:01 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($675/contrato), salto
+— Ciclo 10:06 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($707/contrato), salto
+— Ciclo 10:11 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($743/contrato), salto
+— Ciclo 10:17 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($760/contrato), salto
+— Ciclo 10:22 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($752/contrato), salto
+— Ciclo 10:27 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($750/contrato), salto
+— Ciclo 10:32 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($768/contrato), salto
+   🟢 COMPRÉ 10x XOM260724P00135000 (~$230, lím $0.25) → OrderStatus.PENDING_NEW
+— Ciclo 10:38 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($822/contrato), salto
+— Ciclo 10:43 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($802/contrato), salto
+— Ciclo 10:48 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($830/contrato), salto
+— Ciclo 10:53 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($818/contrato), salto
+— Ciclo 10:59 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  GOOGL CALL: opción muy cara ($818/contrato), salto
+— Ciclo 11:04 ET · mercado ABIERTO · 2 abiertas —
+   🟢 COMPRÉ 1x BA260807C00235000 (~$322, lím $3.27) → OrderStatus.PENDING_NEW
+— Ciclo 11:09 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:14 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:20 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:25 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:30 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:35 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:40 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:45 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:51 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 11:56 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 12:01 ET · mercado ABIERTO · 2 abiertas —
+No hay entradas baratas ahora mismo.
+— Ciclo 12:06 ET · mercado ABIERTO · 2 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
 — Ciclo 12:12 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($648/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1222/contrato), salto
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
 — Ciclo 12:17 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($648/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1148/contrato), salto
-— Ciclo 12:22 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($655/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1148/contrato), salto
-— Ciclo 12:27 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($652/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1180/contrato), salto
-— Ciclo 12:32 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($648/contrato), salto
-   ⏭️  GOOGL CALL: opción muy cara ($1160/contrato), salto
-— Ciclo 12:37 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($645/contrato), salto
-— Ciclo 12:43 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($640/contrato), salto
-— Ciclo 12:48 ET · mercado ABIERTO · 2 abiertas —
-   ⏭️  BA CALL: opción muy cara ($645/contrato), salto
+➕ Adoptada BA260807C00235000 x1 @ $3.20 (riesgo $320)
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 12:22 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 12:27 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 12:32 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 12:37 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 12:43 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 12:48 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 12:54 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 12:59 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 13:04 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($529/contrato), salto
+— Ciclo 13:09 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:15 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:20 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:25 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:30 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:35 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:40 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:46 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:51 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 13:57 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 14:02 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 14:07 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($522/contrato), salto
+— Ciclo 14:12 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:18 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:23 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:28 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:33 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:38 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:43 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:49 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:54 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 14:59 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 15:04 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 15:09 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  GLD CALL: opción muy cara ($445/contrato), salto
+— Ciclo 15:15 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($511/contrato), salto
+— Ciclo 15:20 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($511/contrato), salto
+— Ciclo 15:25 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($511/contrato), salto
+— Ciclo 15:30 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($511/contrato), salto
+— Ciclo 15:36 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($511/contrato), salto
+— Ciclo 15:41 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($511/contrato), salto
+— Ciclo 15:46 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($511/contrato), salto
+— Ciclo 15:51 ET · mercado ABIERTO · 3 abiertas —
+   ⏭️  AMZN CALL: opción muy cara ($511/contrato), salto
+— Ciclo 15:56 ET · mercado ABIERTO · 3 abiertas —
+➕ Adoptada XOM260724P00135000 x10 @ $0.25 (riesgo $250)
+Sin cupo (máximo de posiciones alcanzado).
+— Ciclo 16:01 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:06 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:11 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:16 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:21 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:26 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:31 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:36 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:41 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:46 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:51 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 16:56 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:01 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:07 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:12 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:17 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:22 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:27 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:32 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:37 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:42 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:47 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:52 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 17:57 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:02 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:07 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:12 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:17 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:22 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:27 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:32 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:37 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:42 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:47 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:52 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 18:57 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 19:02 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 19:07 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 19:26 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).
+— Ciclo 19:31 ET · mercado cerrado · 4 abiertas —
+Mercado cerrado: no abro nuevas (gestiono al abrir).

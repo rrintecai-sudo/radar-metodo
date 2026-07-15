@@ -21,9 +21,10 @@ from pathlib import Path
 
 import numpy as np
 
-from config import (UNIVERSO_NUCLEO, ESTRATEGIAS_INICIALES, BOT_RIESGO_POR_TRADE,
+from config import (UNIVERSO_NUCLEO, ESTRATEGIAS, BOT_RIESGO_POR_TRADE,
                     BOT_MAX_POSICIONES, BOT_GASOLINA_MAX_VOL, BOT_SALIDA,
-                    BOT_CORRE_STOP_DESDE_PICO, BOT_MAX_PRIMA_1_CONTRATO, BOT_HORA_INICIO)
+                    BOT_CORRE_STOP_DESDE_PICO, BOT_MAX_PRIMA_1_CONTRATO, BOT_HORA_INICIO,
+                    BOT_OTM_PCT, BOT_ESTRATEGIAS)
 from engine import data, method, broker, bitacora
 from engine.laboratorio import precio_bs
 
@@ -98,9 +99,16 @@ def contratos_para(prima: float) -> int:
 # Escaneo: señales del método + opción barata
 # ---------------------------------------------------------------------------
 def escanear() -> list[dict]:
-    """Señales ENTRADA en el núcleo (ETFs + S&P500) que además pasan el filtro barato."""
-    datos = data.obtener_todos("1d", UNIVERSO_NUCLEO)
-    senales = method.escanear(datos, ESTRATEGIAS_INICIALES)
+    """Señales ENTRADA en el núcleo (ETFs + S&P500) que además pasan el filtro barato.
+    Cubre estrategias diarias e intradía (cada una con su marco de datos)."""
+    # agrupar las estrategias del bot por el marco de datos que necesitan
+    por_intervalo: dict = {}
+    for e in BOT_ESTRATEGIAS:
+        por_intervalo.setdefault(ESTRATEGIAS[e]["intervalo"], []).append(e)
+    senales = []
+    for iv, ests in por_intervalo.items():
+        datos = data.obtener_todos(iv, UNIVERSO_NUCLEO)
+        senales += method.escanear(datos, ests)
     cache: dict = {}
     out = []
     for s in senales:
@@ -111,6 +119,7 @@ def escanear() -> list[dict]:
         s["barata"] = ok
         if ok:
             out.append(s)
+    out.sort(key=lambda s: -s["score"])   # más fuerte primero
     return out
 
 
@@ -252,6 +261,10 @@ def buscar_y_abrir(st: dict, log, dry: bool) -> None:
     """Si hay cupo, abre las mejores señales baratas que no tengamos ya."""
     abiertas = st["posiciones"]
     tickers_abiertos = {v["ticker"] for v in abiertas.values()}
+    # ¡clave! también bloquear los que tienen una ORDEN pendiente (aún sin llenar),
+    # para no apilar varias compras del mismo activo mientras el límite no llena.
+    for sym in broker.ordenes_abiertas():
+        tickers_abiertos.add(_underlying(sym))
     cupo = BOT_MAX_POSICIONES - len(abiertas)
     if cupo <= 0:
         log("Sin cupo (máximo de posiciones alcanzado).")
@@ -270,7 +283,11 @@ def buscar_y_abrir(st: dict, log, dry: bool) -> None:
         return
     for s in candidatos[:cupo]:
         op = s["opcion"]
-        c = broker.buscar_contrato(s["ticker"], op["tipo"], op["strike"], op["dias_vencimiento"])
+        # strike al 6% OTM (más barato/asimétrico) en vez del 1.5% del método
+        precio = s["precio"]
+        strike_obj = (round(precio * (1 + BOT_OTM_PCT / 100), 2) if op["tipo"] == "CALL"
+                      else round(precio * (1 - BOT_OTM_PCT / 100), 2))
+        c = broker.buscar_contrato(s["ticker"], op["tipo"], strike_obj, op["dias_vencimiento"])
         if not c:
             log(f"   ⚠️  {s['ticker']}: no encontré contrato listable")
             continue

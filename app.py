@@ -135,15 +135,20 @@ def chequear_senal(ticker: str, direccion: str) -> tuple[str, str]:
                 favor_vig = True
             else:
                 contra_vig = True
+    # Filosofía Cardona: NUNCA cortar. La pérdida ya está topada en la prima.
+    # El tool informa si el motor sigue de tu lado, pero SIEMPRE recuerda aguantar.
     if favor_ent:
-        return "favor", "✅ Señal A FAVOR (confirmada) — tu dirección sigue vigente"
-    if contra_ent and not favor_vig:
-        return "contra", "⚠️ SEÑAL EN CONTRA — el motor se volteó. Considera CORTAR"
+        return "favor", "✅ Señal A FAVOR (confirmada) — el motor sigue de tu lado"
     if favor_vig:
         return "favor", "🟡 Señal a favor (vigilando) — sigue de tu lado"
+    if contra_ent and not favor_vig:
+        return "neutral", ("🟡 El motor ya no te apoya — pero tu pérdida está TOPADA en la prima. "
+                           "Cardona: aguanta, no cortes por miedo; deja que el mercado trabaje")
     if contra_vig:
-        return "contra", "⚠️ Señal virando EN CONTRA — ojo, vigila de cerca"
-    return "neutral", "🔕 Señal enfriada — el motivo del método ya no está activo"
+        return "neutral", ("🟡 El motivo se está enfriando — aguanta con calma. "
+                           "Lo máximo que arriesgas ya lo sabías (la prima)")
+    return "neutral", ("🔕 El motivo del método ya no está activo — no cortes por miedo. "
+                       "Pérdida topada; deja correr hasta que doble o venza")
 
 
 @st.cache_data(ttl=300, show_spinner=False)

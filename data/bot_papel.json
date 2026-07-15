@@ -5,22 +5,44 @@
       "contratos_inicial": 1,
       "contratos_actual": 1,
       "prima_entrada": 2.05,
-      "pico_plpc": 0.0,
+      "pico_plpc": 0.28300000000000003,
       "vendido": [],
       "proceeds": 0.0,
       "bitacora_id": 1,
       "fecha": "2026-07-14T09:37"
     },
-    "XOM260807C00147000": {
-      "ticker": "XOM",
-      "contratos_inicial": 7,
-      "contratos_actual": 7,
-      "prima_entrada": 4.0,
+    "SPY260727P00685000": {
+      "ticker": "SPY",
+      "contratos_inicial": 1,
+      "contratos_actual": 1,
+      "prima_entrada": 0.21,
       "pico_plpc": 0.0,
       "vendido": [],
       "proceeds": 0.0,
       "bitacora_id": 2,
-      "fecha": "2026-07-14T10:36"
+      "fecha": "2026-07-14T14:52"
+    },
+    "BA260807C00235000": {
+      "ticker": "BA",
+      "contratos_inicial": 1,
+      "contratos_actual": 1,
+      "prima_entrada": 3.2,
+      "pico_plpc": 0.0,
+      "vendido": [],
+      "proceeds": 0.0,
+      "bitacora_id": 3,
+      "fecha": "2026-07-15T12:17"
+    },
+    "XOM260724P00135000": {
+      "ticker": "XOM",
+      "contratos_inicial": 10,
+      "contratos_actual": 10,
+      "prima_entrada": 0.25,
+      "pico_plpc": 0.0,
+      "vendido": [],
+      "proceeds": 0.0,
+      "bitacora_id": 9,
+      "fecha": "2026-07-15T15:56"
     }
   }
 }
