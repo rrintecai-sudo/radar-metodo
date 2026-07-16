@@ -96,6 +96,21 @@ def riesgo_inminente(horas: int = HORAS_RIESGO) -> dict | None:
             "forecast": e.get("forecast", ""), "previous": e.get("previous", "")}
 
 
+def es_dia_fed(ahora: datetime | None = None) -> dict | None:
+    """
+    ¿HOY es día de reunión de la Reserva Federal (FOMC)? Regla de Cardona: ese día
+    NO se invierte (7-8 de 10 veces el mercado cae al día siguiente). Devuelve el
+    evento si hoy hay una reunión/decisión de la Fed, o None.
+    """
+    ahora = ahora or _ahora()
+    hoy = ahora.date()
+    claves = ("fomc", "federal funds", "fed interest", "fed rate", "interest rate decision")
+    for e in eventos():
+        if e["cuando"].date() == hoy and any(k in e["titulo"].lower() for k in claves):
+            return {"titulo": e["titulo"], "cuando": e["cuando"]}
+    return None
+
+
 def contexto_senal() -> dict:
     """Contexto de calendario para mostrar junto a una señal."""
     r = riesgo_inminente()

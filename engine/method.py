@@ -430,6 +430,20 @@ def escanear_completo(estrategias: list[str] | None = None) -> list[dict]:
         datos = data.obtener_todos(intervalo)
         señales += escanear(datos, estrategias=ests)
 
+    # REGLA DE CARDONA (global, día en vivo): el día de la reunión de la FED (FOMC)
+    # NO se invierte. Degradamos toda ENTRADA a VIGILAR con el aviso.
+    try:
+        from engine import calendar as cal
+        fed = cal.es_dia_fed()
+    except Exception:
+        fed = None
+    if fed:
+        for s in señales:
+            if s["estado"] == "ENTRADA":
+                s["estado"] = "VIGILAR"
+                s["aviso_horario"] = (f"🏛️ Día de la FED ({fed['titulo']}) — "
+                                      "Cardona: hoy NO se invierte (el mercado suele caer mañana)")
+
     orden = {"ENTRADA": 0, "VIGILAR": 1, "NADA": 2}
     señales.sort(key=lambda s: (orden[s["estado"]], -s["score"]))
     return señales

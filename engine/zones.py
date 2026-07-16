@@ -221,16 +221,22 @@ def ruptura(df: pd.DataFrame, linea_valor: float, direccion: str) -> dict:
     v = df.iloc[-1]
     prev = df.iloc[-2] if len(df) >= 2 else v
     o, c = float(v["Open"]), float(v["Close"])
+    h, l = float(v["High"]), float(v["Low"])
     prev_c = float(prev["Close"])
+    # Regla de Cardona: la vela de ruptura debe ser SÓLIDA (cuerpo mayor que las colas),
+    # no un hanger ni un doji con cola larga. Exigimos cuerpo >= la mitad del rango.
+    rango = h - l
+    cuerpo = abs(c - o)
+    solida = rango <= 0 or (cuerpo / rango) >= 0.5
     if direccion == "call":
-        rompio = c > linea_valor and prev_c <= linea_valor and c > o  # verde cruza hacia arriba
+        rompio = c > linea_valor and prev_c <= linea_valor and c > o and solida  # verde sólida cruza arriba
     else:
-        rompio = c < linea_valor and prev_c >= linea_valor and c < o  # roja cruza hacia abajo
+        rompio = c < linea_valor and prev_c >= linea_valor and c < o and solida  # roja sólida cruza abajo
     return {
         "hay": bool(rompio),
         "cierre": c,
         "linea": float(linea_valor),
-        "texto": ("Vela verde rompió la línea de techo hacia arriba" if direccion == "call"
-                  else "Vela roja rompió la línea de piso hacia abajo") if rompio
-                 else "Todavía sin ruptura de la línea",
+        "texto": ("Vela verde SÓLIDA rompió la línea de techo hacia arriba" if direccion == "call"
+                  else "Vela roja SÓLIDA rompió la línea de piso hacia abajo") if rompio
+                 else "Todavía sin ruptura sólida de la línea",
     }
