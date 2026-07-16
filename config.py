@@ -149,6 +149,12 @@ CAIDA_VENTANA = 15           # velas hacia atrás para medir la caída reciente 
 GAP_MIN_PCT = 0.5            # salto mínimo (%) sobre el máximo previo para llamarlo gap
 GAP_LOOKBACK = 5            # velas recientes donde buscar el gap
 
+# Zona cara (regla de Cardona: "no comprar lejos del promedio, tras una gran subida").
+# Si el precio está MÁS de este % por encima del MA40, está caro/extendido: no se
+# compran calls ahí (esperar la corrección hacia el promedio). Generoso para no
+# estorbar a gaps ni caídas normales, pero corta el "comprar carísimo arriba".
+ZONA_CARA_PCT = 8.0
+
 # ---------------------------------------------------------------------------
 # 3) PATRONES DE VELA (Compendio, secc. 1.1)
 # ---------------------------------------------------------------------------

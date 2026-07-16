@@ -20,7 +20,8 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 
 from config import (CAIDA_FUERTE_MIN_PCT, CAIDA_NORMAL_MAX_PCT, CAIDA_NORMAL_MIN_PCT,
-                    CERCANIA_MEDIA_PCT, ESTRATEGIAS, PESOS_CONFLUENCIA, UMBRAL_SENAL)
+                    CERCANIA_MEDIA_PCT, ESTRATEGIAS, PESOS_CONFLUENCIA, UMBRAL_SENAL,
+                    ZONA_CARA_PCT)
 from engine import indicators as ind
 from engine import zones as zn
 from engine.options import sugerir_opcion
@@ -377,6 +378,17 @@ def evaluar(ticker: str, df: pd.DataFrame, estrategia: str) -> dict:
         estado = "VIGILAR"
         aviso_horario = ("⏳ Antes de las 11am ET — regla de Cardona: espera. "
                          "La vela de las 10 y la primera vela verde engañan.")
+
+    # REGLA DE ZONA CARA: no comprar calls muy por encima del promedio (Cardona:
+    # "no comprar lejos del promedio, tras una gran subida — esperar la corrección").
+    # NO aplica al gap: un gap al alza ES un salto por encima del promedio a propósito
+    # (es estrategia de impulso, no de comprar-en-la-caída).
+    if r["direccion"] == "call" and estado == "ENTRADA" and estrategia != "gap":
+        d40 = zn.distancia_a_medias(df).get("MA40")
+        if d40 is not None and d40 > ZONA_CARA_PCT:
+            estado = "VIGILAR"
+            aviso_horario = (f"📈 Zona cara: el precio está {d40:+.1f}% sobre el MA40 — "
+                             "Cardona: no comprar lejos del promedio; espera la corrección.")
 
     ult = df.iloc[-1]
     hoy = df.index[-1]
