@@ -705,16 +705,16 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
         intradia = ESTRATEGIAS[s["estrategia"]]["intervalo"] == "1h"
         if ps is not None:
             sc_col = "#0E7C6B" if (ps >= 45 and intradia) else ("#B8860B" if ps >= 30 else "#9AA0A6")
-            apto = "✅ apta para scalp" if (ps >= 45 and intradia) else ("solo si es rápida" if intradia else "lenta, no ideal para scalp")
+            apto = "se mueve rápido" if (ps >= 45 and intradia) else ("movimiento moderado" if intradia else "movimiento lento (normal en diarias)")
             st.markdown(f"<div style='background:#FFF7E6;border-radius:8px;padding:6px 10px;font-size:.83rem;"
-                        f"color:#7A5B00;'>⚡ <b>+20% en el día: <span style='color:{sc_col};'>{ps}%</span></b> "
+                        f"color:#7A5B00;'>⚡ <b>Velocidad — +20% en el día: <span style='color:{sc_col};'>{ps}%</span></b> "
                         f"<span style='color:#9AA0A6;'>· {apto}</span></div>", unsafe_allow_html=True)
 
-        # 🧭 PLAN SUGERIDO: el tool decide por ti — SCALP o ASIMETRÍA
-        if intradia and (ps or 0) >= 45:
-            plan_tit, plan_txt, plan_col = "⚡ PLAN: SCALP", "Entra → sal en +20% o corta en −20%, el MISMO día", "#0E7C6B"
-        else:
-            plan_tit, plan_txt, plan_col = "🎪 PLAN: ASIMETRÍA", "Entra → deja correr al +50%, aguanta días, pérdida topada en la prima", "#7A4E9E"
+        # 🧭 PLAN DEL MÉTODO (Cardona, decidido con Oscar): +100% vende la mitad, aguanta, NO cortes.
+        plan_tit = "🎯 PLAN DEL MÉTODO"
+        plan_txt = ("Entra → al **+100%** (dobló) vende la **MITAD** (recuperas todo tu capital) y "
+                    "aguanta el resto. Pérdida topada en la prima. **NO cortes por miedo.**")
+        plan_col = "#0E6E7D"
         st.markdown(f"<div style='background:{plan_col}14;border-radius:8px;padding:6px 10px;margin-top:4px;'>"
                     f"<b style='color:{plan_col};font-size:.86rem;'>{plan_tit}</b>"
                     f"<br><span style='font-size:.78rem;color:#3A3F47;'>{plan_txt}</span></div>",
@@ -1104,12 +1104,15 @@ if dashboard:
     # --- filtros (sin "mínimo de condiciones": el ranking lo hace solo) ---
     with st.container(border=True):
         f1, f2 = st.columns([1.2, 1.6])
-        d_dir = f1.radio("Dirección", ["Ambas", "Solo CALL (sube)", "Solo PUT (baja)"])
+        d_dir = f1.radio("Dirección", ["Solo CALL (sube)", "Ambas", "Solo PUT (baja) — pendiente día 2"],
+                         help="Por ahora solo CALLS: el método del día 1 (validado) es de compras. "
+                              "Los PUTS se activan cuando hagamos el día 2 del seminario.")
         d_orden = f2.radio("Ordenar por",
-                           ["⚡ Scalp (+20% en el día)", "💡 Valor esperado (matemática)",
-                            "🎯 Oportunidad (equilibrio)", "💥 Rentabilidad (más ganancia)",
-                            "🛡️ Confiabilidad (más segura)"],
-                           help="Scalp = las que más probable hacen +20% HOY (para entrar y salir el mismo día).")
+                           ["🎯 Oportunidad (equilibrio)", "💡 Valor esperado (matemática)",
+                            "💥 Rentabilidad (más ganancia)", "🛡️ Confiabilidad (más segura)",
+                            "⚡ Scalp (+20% en el día) — otro enfoque"],
+                           help="Oportunidad = el equilibrio del método (zona + confiabilidad + beneficio). "
+                                "Scalp es un enfoque distinto (entrar y salir el mismo día), no el método puro.")
         g1, g2, g3 = st.columns([1.4, 1, 1])
         d_pres = g1.number_input("💵 Presupuesto máx. por contrato ($) — 0 = sin límite",
                                  min_value=0, max_value=100000, value=0, step=100)
@@ -1220,8 +1223,8 @@ if ampliado:
         f1, f2, f3 = st.columns([1.1, 1.3, 1.4])
         min_cond = f1.select_slider("Mínimo de condiciones", options=[2, 3, 4, 5], value=4,
                                     help="4 de 5 = señales sólidas. Sube a 5 para las más exigentes.")
-        direccion_f = f2.radio("Dirección", ["Ambas", "Solo CALL (sube)", "Solo PUT (baja)"],
-                               help="En mercado de caídas, los PUT ganan. Aquí eliges.")
+        direccion_f = f2.radio("Dirección", ["Solo CALL (sube)", "Ambas", "Solo PUT (baja) — pendiente día 2"],
+                               help="Por ahora solo CALLS (método del día 1, validado). Los PUTS se activan con el día 2.")
         orden = f3.radio("Ordenar por",
                          ["🎯 Oportunidad (equilibrio)", "💥 Rentabilidad (más ganancia)",
                           "🛡️ Confiabilidad (más segura)"])
