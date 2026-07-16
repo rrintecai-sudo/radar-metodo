@@ -226,6 +226,49 @@ def _eval_caida_fuerte(df: pd.DataFrame) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Estrategia gap al alza (diario)
+# ---------------------------------------------------------------------------
+def _eval_gap(df: pd.DataFrame) -> dict:
+    """
+    Gap al alza (1d): la acción abrió con un salto por encima del máximo previo.
+    Mientras el precio RESPETE el piso del gap y confirme con vela verde -> CALL.
+    El gap suele anticipar la ruptura del canal (Cardona: 'primer gap al alza').
+    """
+    chk = _nuevo_checklist()
+    precio = float(df.iloc[-1]["Close"])
+    gap = zn.gap_al_alza(df)
+    rup = {"hay": False, "texto": "Sin gap al alza reciente"}
+
+    if gap:
+        chk["zona"] = {"ok": True,
+                       "detalle": f"Gap al alza de {gap['gap_pct']:.1f}% (piso del gap {gap['piso']:.2f})"}
+        # confirmación: la última vela es verde y RESPETA el piso del gap (no lo cerró)
+        v = df.iloc[-1]
+        o, c, low = float(v["Open"]), float(v["Close"]), float(v["Low"])
+        verde = c > o
+        respeta = low >= gap["piso"] * (1 - 0.003) and c > gap["piso"]
+        if verde and respeta:
+            chk["ruptura"] = {"ok": True, "detalle": "Vela verde respeta el piso del gap (confirmación)"}
+            rup = {"hay": True, "texto": "Vela verde respeta el piso del gap"}
+    # confluencia con promedios de fondo
+    for p in (40, 100, 200):
+        if zn.tocando_media(df, p):
+            chk["media"] = {"ok": True, "detalle": f"Confluencia con MA{p}"}
+            break
+    # soporte histórico cercano
+    piso = zn.piso_fuerte_cercano(df)
+    if piso:
+        chk["soporte"] = {"ok": True, "detalle": f"Cerca de soporte histórico {piso['precio']:.2f}"}
+    sv = ind.senal_vela(df, "call")
+    if sv["hay"]:
+        chk["vela"] = {"ok": True, "detalle": sv["texto"]}
+    geo = {"gap": gap, "enfasis_medias": [40, 100, 200], "ruptura": rup,
+           "vela_patron": sv.get("patron"), "vela_ok": sv["hay"]}
+    return {"direccion": "call", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+# ---------------------------------------------------------------------------
 # Estrategias basadas en nivel fijo (piso fuerte / tres semanas)
 # ---------------------------------------------------------------------------
 def _eval_piso_fuerte(df: pd.DataFrame) -> dict:
@@ -300,6 +343,7 @@ _EVALUADORES = {
     "canal": _eval_canal,
     "caida_normal": _eval_caida_normal,
     "caida_fuerte": _eval_caida_fuerte,
+    "gap": _eval_gap,
     "piso_fuerte": _eval_piso_fuerte,
     "tres_semanas": _eval_tres_semanas,
 }

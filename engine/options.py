@@ -37,6 +37,7 @@ def sugerir_opcion(precio: float, direccion: str, estrategia: str,
         "canal": VENCIMIENTO_DIAS_MIN + 5,
         "caida_normal": VENCIMIENTO_DIAS_MIN,
         "caida_fuerte": VENCIMIENTO_DIAS_MIN,
+        "gap": VENCIMIENTO_DIAS_MIN + 7,
         "piso_fuerte": VENCIMIENTO_DIAS_MIN + 7,
         "tres_semanas": VENCIMIENTO_DIAS_MAX,
     }.get(estrategia, VENCIMIENTO_DIAS_MAX)

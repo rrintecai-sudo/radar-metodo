@@ -15,8 +15,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from config import (CAIDA_VENTANA, CERCANIA_MEDIA_PCT, PIVOTE_VENTANA,
-                    SR_CERCANIA_PCT, SR_MIN_TOQUES, SR_TOLERANCIA_PCT)
+from config import (CAIDA_VENTANA, CERCANIA_MEDIA_PCT, GAP_LOOKBACK, GAP_MIN_PCT,
+                    PIVOTE_VENTANA, SR_CERCANIA_PCT, SR_MIN_TOQUES, SR_TOLERANCIA_PCT)
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +61,31 @@ def caida_reciente(df: pd.DataFrame, ventana: int = CAIDA_VENTANA) -> float:
     if pico <= 0:
         return 0.0
     return max(0.0, (pico - post_low) / pico * 100.0)
+
+
+def gap_al_alza(df: pd.DataFrame, lookback: int = GAP_LOOKBACK,
+                gap_min_pct: float = GAP_MIN_PCT) -> dict | None:
+    """
+    Detecta un gap al alza reciente: la apertura de una vela salta por encima del
+    MÁXIMO de la vela anterior (queda un hueco). El 'piso del gap' = ese máximo previo.
+    Devuelve el gap más reciente dentro de `lookback` velas, o None.
+    """
+    n = len(df)
+    if n < 3:
+        return None
+    lim = max(1, n - lookback)
+    for i in range(n - 1, lim - 1, -1):
+        op = float(df.iloc[i]["Open"])
+        prev_high = float(df.iloc[i - 1]["High"])
+        prev_close = float(df.iloc[i - 1]["Close"])
+        if prev_close <= 0:
+            continue
+        gap_pct = (op - prev_high) / prev_close * 100.0
+        if gap_pct >= gap_min_pct:
+            return {"idx": i, "piso": prev_high, "gap_pct": gap_pct,
+                    "apertura": op, "cierre_previo": prev_close,
+                    "velas_desde": (n - 1) - i}
+    return None
 
 
 # ---------------------------------------------------------------------------

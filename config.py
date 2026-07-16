@@ -143,6 +143,12 @@ CAIDA_NORMAL_MAX_PCT = 1.5   # caída pequeña: hasta 1.5% (ni alcanza el MA40)
 CAIDA_FUERTE_MIN_PCT = 1.5   # caída fuerte: más de 1.5% (pasa el MA40, a veces MA100/200)
 CAIDA_VENTANA = 15           # velas hacia atrás para medir la caída reciente (pico->valle)
 
+# Gap al alza (estrategia "gap"). Un gap = la apertura salta por encima del máximo
+# del día previo (queda un hueco). El "piso del gap" es ese máximo previo: mientras
+# el precio lo respete (no lo cierre), la tendencia alcista sigue -> CALL.
+GAP_MIN_PCT = 0.5            # salto mínimo (%) sobre el máximo previo para llamarlo gap
+GAP_LOOKBACK = 5            # velas recientes donde buscar el gap
+
 # ---------------------------------------------------------------------------
 # 3) PATRONES DE VELA (Compendio, secc. 1.1)
 # ---------------------------------------------------------------------------
@@ -204,6 +210,7 @@ PREMIO_MINIMO_POR_ESTRATEGIA = {
     "canal": 2.0,         # intradía -> rápido: mínimo ×2
     "caida_normal": 2.0,  # intradía -> rápido: mínimo ×2
     "caida_fuerte": 2.0,  # intradía -> rápido: mínimo ×2
+    "gap": 3.0,           # diario -> medio: mínimo ×3
     "piso_fuerte": 3.0,   # 1-4 días -> medio: mínimo ×3
     "tres_semanas": 5.0,  # varios días/semanas -> lento: mínimo ×5
 }
@@ -214,8 +221,12 @@ VIGILANTE_SOLO_RAPIDAS = True
 VIGILANTE_MAX_DIAS_X2 = 1.5   # el ×2 debe darse en 1.5 días o menos
 VIGILANTE_MIN_PROB_X2 = 40    # con al menos 40% de probabilidad histórica
 
-SALIDA_GANANCIA_PCT = 50      # "al +50%, vender la mitad"
-SALIDA_VENDER_FRACCION = 0.5  # vender la mitad (50-70%); dejar correr el resto
+# Regla de salida (decidida con Oscar 2026-07-15): cuando la opción DOBLA (+100%),
+# vender la MITAD. Con eso recuperas TODA tu inversión (la mitad de algo que vale ×2 =
+# tu capital completo) y la otra mitad corre 100% gratis buscando el ×3, ×5, ×10.
+# Es el punto matemáticamente perfecto para "recuperar y dejar correr".
+SALIDA_GANANCIA_PCT = 100      # al +100% (dobló)
+SALIDA_VENDER_FRACCION = 0.5   # vender la mitad -> recuperas todo el capital; el resto corre gratis
 RIESGO_MAX_CAPITAL_PCT = 10   # "nunca más del 5-10% del capital en opciones"
 CAPITAL_PRUEBA = 500          # "apartar ~$500 que podemos perder por completo"
 
@@ -263,6 +274,16 @@ ESTRATEGIAS = {
         "ritmo": "⏱️ Intradía",
         "ritmo_txt": "Vigila durante el día · actúa cuando rompe",
         "descripcion": "caída grande (>1.5%) que pasa el MA40 (a veces MA100/200) + ruptura con vela verde -> CALL",
+    },
+    "gap": {
+        "nombre": "Gap al alza",
+        "marco": "1d",
+        "intervalo": "1d",
+        "velocidad": "1-4 días",
+        "vigilancia": "media-baja",
+        "ritmo": "📅 Diario",
+        "ritmo_txt": "Decides al cierre · el gap suele empujar varios días",
+        "descripcion": "la acción abre con un salto (gap) por encima del máximo previo; mientras respete el piso del gap y confirme con vela verde -> CALL",
     },
     "piso_fuerte": {
         "nombre": "Piso fuerte",
