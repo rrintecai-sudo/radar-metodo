@@ -15,8 +15,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from config import (CERCANIA_MEDIA_PCT, PIVOTE_VENTANA, SR_CERCANIA_PCT,
-                    SR_MIN_TOQUES, SR_TOLERANCIA_PCT)
+from config import (CAIDA_VENTANA, CERCANIA_MEDIA_PCT, PIVOTE_VENTANA,
+                    SR_CERCANIA_PCT, SR_MIN_TOQUES, SR_TOLERANCIA_PCT)
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +42,25 @@ def tocando_media(df: pd.DataFrame, periodo: int) -> bool:
     """¿El precio está 'tocando' (a ±CERCANIA_MEDIA_PCT) el promedio dado?"""
     d = distancia_a_medias(df).get(f"MA{periodo}")
     return d is not None and abs(d) <= CERCANIA_MEDIA_PCT
+
+
+def caida_reciente(df: pd.DataFrame, ventana: int = CAIDA_VENTANA) -> float:
+    """
+    % de caída reciente = del máximo del tramo al mínimo POSTERIOR a ese máximo.
+    Sirve para clasificar la caída (normal <1.5% vs fuerte >1.5%) como hace Cardona.
+    Devuelve 0 si no hay caída (el mínimo va antes del máximo = venía subiendo).
+    """
+    if len(df) < ventana + 1:
+        ventana = max(2, len(df) - 1)
+    seg = df.iloc[-ventana:]
+    highs = seg["High"].values
+    lows = seg["Low"].values
+    i_max = int(highs.argmax())
+    pico = float(highs[i_max])
+    post_low = float(lows[i_max:].min())   # mínimo desde el pico hacia adelante
+    if pico <= 0:
+        return 0.0
+    return max(0.0, (pico - post_low) / pico * 100.0)
 
 
 # ---------------------------------------------------------------------------

@@ -136,6 +136,13 @@ MEDIAS = [20, 40, 100, 200]
 # Expresado como % de distancia del cierre al promedio.
 CERCANIA_MEDIA_PCT = 0.6   # ±0.6% se considera "tocando" el promedio
 
+# Caídas (estrategias "caída normal" y "caída fuerte"). Umbral del propio Cardona:
+# "caída normal = menos del 1.5% (en SPY ~3-5 USD); caída fuerte = más del 1.5%".
+CAIDA_NORMAL_MIN_PCT = 0.4   # una caída "normal" real, no ruido (SPY ~3-5 USD ≈ 0.5%)
+CAIDA_NORMAL_MAX_PCT = 1.5   # caída pequeña: hasta 1.5% (ni alcanza el MA40)
+CAIDA_FUERTE_MIN_PCT = 1.5   # caída fuerte: más de 1.5% (pasa el MA40, a veces MA100/200)
+CAIDA_VENTANA = 15           # velas hacia atrás para medir la caída reciente (pico->valle)
+
 # ---------------------------------------------------------------------------
 # 3) PATRONES DE VELA (Compendio, secc. 1.1)
 # ---------------------------------------------------------------------------
@@ -195,6 +202,8 @@ VENCIMIENTO_DIAS_MAX = 21  # "tres semanas para que se mueva"
 PREMIO_MINIMO_POR_ESTRATEGIA = {
     "ma40": 2.0,          # intradía -> rápido: mínimo ×2
     "canal": 2.0,         # intradía -> rápido: mínimo ×2
+    "caida_normal": 2.0,  # intradía -> rápido: mínimo ×2
+    "caida_fuerte": 2.0,  # intradía -> rápido: mínimo ×2
     "piso_fuerte": 3.0,   # 1-4 días -> medio: mínimo ×3
     "tres_semanas": 5.0,  # varios días/semanas -> lento: mínimo ×5
 }
@@ -234,6 +243,26 @@ ESTRATEGIAS = {
         "ritmo": "⏱️ Intradía",
         "ritmo_txt": "Vigila durante el día · actúa cuando rompe",
         "descripcion": "canal descendente, ruptura de la línea de techo con vela verde -> CALL (espejo: piso con roja -> PUT)",
+    },
+    "caida_normal": {
+        "nombre": "Caída normal",
+        "marco": "1h",
+        "intervalo": "1h",
+        "velocidad": "rápida (mismo día)",
+        "vigilancia": "alta",
+        "ritmo": "⏱️ Intradía",
+        "ritmo_txt": "Vigila durante el día · actúa cuando rompe",
+        "descripcion": "caída pequeña (<1.5%) que ni toca el MA40 + ruptura de línea bajista con vela verde -> CALL",
+    },
+    "caida_fuerte": {
+        "nombre": "Caída fuerte",
+        "marco": "1h",
+        "intervalo": "1h",
+        "velocidad": "rápida (mismo día)",
+        "vigilancia": "alta",
+        "ritmo": "⏱️ Intradía",
+        "ritmo_txt": "Vigila durante el día · actúa cuando rompe",
+        "descripcion": "caída grande (>1.5%) que pasa el MA40 (a veces MA100/200) + ruptura con vela verde -> CALL",
     },
     "piso_fuerte": {
         "nombre": "Piso fuerte",

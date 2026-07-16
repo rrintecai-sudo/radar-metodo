@@ -19,7 +19,8 @@ from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
-from config import (ESTRATEGIAS, PESOS_CONFLUENCIA, UMBRAL_SENAL)
+from config import (CAIDA_FUERTE_MIN_PCT, CAIDA_NORMAL_MAX_PCT, CAIDA_NORMAL_MIN_PCT,
+                    CERCANIA_MEDIA_PCT, ESTRATEGIAS, PESOS_CONFLUENCIA, UMBRAL_SENAL)
 from engine import indicators as ind
 from engine import zones as zn
 from engine.options import sugerir_opcion
@@ -156,6 +157,75 @@ def _eval_canal(df: pd.DataFrame) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Estrategias de caída (normal / fuerte) — reusan línea bajista + ruptura
+# ---------------------------------------------------------------------------
+def _eval_caida_normal(df: pd.DataFrame) -> dict:
+    """
+    Caída normal (1h): caída PEQUEÑA (<1.5%) que ni siquiera llega al MA40, en
+    tendencia al alza, y una vela verde rompe la línea bajista -> CALL.
+    """
+    chk = _nuevo_checklist()
+    precio = float(df.iloc[-1]["Close"])
+    caida = zn.caida_reciente(df)
+    d40 = zn.distancia_a_medias(df).get("MA40")
+    # zona: caída pequeña que NO bajó hasta el MA40 (el precio sigue por encima)
+    no_toco_40 = d40 is None or d40 > -CERCANIA_MEDIA_PCT
+    if CAIDA_NORMAL_MIN_PCT <= caida <= CAIDA_NORMAL_MAX_PCT and no_toco_40:
+        chk["zona"] = {"ok": True, "detalle": f"Caída normal de {caida:.1f}% (no llegó al MA40)"}
+    # tendencia al alza (20 sobre 40) — el contexto ideal según Cardona
+    if ind.medias_alineadas(df, 20, 40):
+        chk["media"] = {"ok": True, "detalle": "Tendencia al alza (20 sobre 40)"}
+    sv = ind.senal_vela(df, "call")
+    if sv["hay"]:
+        chk["vela"] = {"ok": True, "detalle": sv["texto"]}
+    # línea bajista CORTA: una caída normal es de pocas velas (Cardona la traza corta)
+    lb = zn.linea_bajista(df, ventana=6)
+    rup = {"hay": False, "texto": "Sin línea bajista clara"}
+    if lb:
+        rup = zn.ruptura(df, lb["valor_actual"], "call")
+        if rup["hay"]:
+            chk["ruptura"] = {"ok": True, "detalle": rup["texto"]}
+    geo = {"linea_bajista": lb, "enfasis_medias": [20, 40], "ruptura": rup,
+           "vela_patron": sv.get("patron"), "vela_ok": sv["hay"], "caida_pct": caida}
+    return {"direccion": "call", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+def _eval_caida_fuerte(df: pd.DataFrame) -> dict:
+    """
+    Caída fuerte (1h): caída GRANDE (>1.5%) que pasa el MA40 (a veces toca MA100/200),
+    y una vela verde rompe la línea bajista -> CALL. Rebote desde zona barata.
+    """
+    chk = _nuevo_checklist()
+    precio = float(df.iloc[-1]["Close"])
+    caida = zn.caida_reciente(df)
+    d40 = zn.distancia_a_medias(df).get("MA40")
+    # zona: caída fuerte que llegó/pasó el MA40 (o cerca de MA100/200)
+    llego_fondo = zn.tocando_media(df, 40) or (d40 is not None and d40 < 0) \
+        or zn.tocando_media(df, 100) or zn.tocando_media(df, 200)
+    if caida >= CAIDA_FUERTE_MIN_PCT and llego_fondo:
+        chk["zona"] = {"ok": True, "detalle": f"Caída fuerte de {caida:.1f}% (pasó el MA40)"}
+    # confluencia con los promedios de fondo = zona barata
+    for p in (40, 100, 200):
+        if zn.tocando_media(df, p):
+            chk["soporte"] = {"ok": True, "detalle": f"Confluencia con MA{p} (zona barata)"}
+            break
+    sv = ind.senal_vela(df, "call")
+    if sv["hay"]:
+        chk["vela"] = {"ok": True, "detalle": sv["texto"]}
+    lb = zn.linea_bajista(df)
+    rup = {"hay": False, "texto": "Sin línea bajista clara"}
+    if lb:
+        rup = zn.ruptura(df, lb["valor_actual"], "call")
+        if rup["hay"]:
+            chk["ruptura"] = {"ok": True, "detalle": rup["texto"]}
+    geo = {"linea_bajista": lb, "enfasis_medias": [40, 100, 200], "ruptura": rup,
+           "vela_patron": sv.get("patron"), "vela_ok": sv["hay"], "caida_pct": caida}
+    return {"direccion": "call", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+# ---------------------------------------------------------------------------
 # Estrategias basadas en nivel fijo (piso fuerte / tres semanas)
 # ---------------------------------------------------------------------------
 def _eval_piso_fuerte(df: pd.DataFrame) -> dict:
@@ -228,6 +298,8 @@ def _eval_tres_semanas(df: pd.DataFrame) -> dict:
 _EVALUADORES = {
     "ma40": _eval_ma40,
     "canal": _eval_canal,
+    "caida_normal": _eval_caida_normal,
+    "caida_fuerte": _eval_caida_fuerte,
     "piso_fuerte": _eval_piso_fuerte,
     "tres_semanas": _eval_tres_semanas,
 }
