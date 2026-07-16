@@ -370,6 +370,68 @@ def grafico(señal: dict):
     return viz.figura_detallada(df, señal, n_velas=n)
 
 
+def _fecha_es(iso: str) -> str:
+    """Convierte '2026-07-24' en 'viernes 24-jul' (para leer el vencimiento fácil)."""
+    try:
+        from datetime import date
+        d = date.fromisoformat(iso)
+        dias = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+        meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+        return f"{dias[d.weekday()]} {d.day}-{meses[d.month - 1]}"
+    except Exception:
+        return iso
+
+
+def orden_de_compra(s: dict):
+    """
+    La ORDEN clara: exactamente QUÉ contrato comprar. Separa lo CONFIABLE (el
+    contrato: tipo + activo + strike + vencimiento, que tecleas tal cual en uCharts)
+    de lo ESTIMADO (la prima en $, que confirmas en el bróker).
+    """
+    o = s["opcion"]
+    tipo = o["tipo"]
+    emoji = "🟢" if tipo == "CALL" else "🔴"
+    cot = s.get("_cot") or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
+    with st.container(border=True):
+        st.markdown(f"#### {emoji} ORDEN DE COMPRA")
+        if not cot:
+            st.warning(
+                f"**{tipo} {s['ticker']}** · strike aproximado **~{o['strike']}** (~{o['otm_pct']}% OTM) · "
+                f"vencimiento **~{o['dias_vencimiento']} días**.\n\n"
+                "No pude traer la cadena real ahora mismo — busca en uCharts el strike más cercano "
+                "y el vencimiento semanal más próximo. Refresca en un momento para la orden exacta.")
+            return
+        prima = cot["premium"]
+        costo1 = round(prima * 100)
+        venc = _fecha_es(cot["exp"])
+        st.markdown(f"## {tipo} · {s['ticker']} · strike {cot['strike']}")
+        st.markdown(f"**Vence {venc}** · en {cot['dias']} días")
+        a, b = st.columns(2)
+        a.success(
+            "**✅ Esto es EXACTO — tecléalo así en uCharts:**\n\n"
+            f"- Tipo: **{tipo}**\n"
+            f"- Activo: **{s['ticker']}**\n"
+            f"- Strike: **{cot['strike']}**\n"
+            f"- Vencimiento: **{cot['exp']}** ({venc})")
+        b.warning(
+            "**⚠️ Esto es ESTIMADO — confírmalo en uCharts:**\n\n"
+            f"- Prima: **~${prima}** por acción\n"
+            f"- Costo de 1 contrato: **~${costo1}**\n\n"
+            "El **precio exacto** lo ves en tu bróker al comprar. **Ese manda**, no este estimado.")
+        # cuántos contratos, según tu riesgo (10% de la cuenta)
+        cuenta = st.number_input(
+            "Tu cuenta ($) — para calcular cuántos contratos comprar",
+            min_value=100, value=int(st.session_state.get("cuenta_usd", 1000)), step=100,
+            key=f"cta_{s['ticker']}_{s['estrategia']}")
+        st.session_state["cuenta_usd"] = cuenta
+        riesgo = round(cuenta * RIESGO_MAX_CAPITAL_PCT / 100)
+        n_cont = max(1, int(riesgo // costo1)) if costo1 else 1
+        st.info(
+            f"🛡️ Arriesga máximo el **{RIESGO_MAX_CAPITAL_PCT}%** de tu cuenta = **${riesgo}**. "
+            f"A ~${costo1} por contrato → **compra ~{n_cont} contrato(s)** (arriesgas ~${n_cont * costo1}). "
+            "Ajusta la cantidad según la prima REAL que veas en uCharts.")
+
+
 def tarjeta(s: dict):
     c = COLOR[s["estado"]]
     meta = UNIVERSO.get(s["ticker"], {})
@@ -457,6 +519,9 @@ def tarjeta(s: dict):
             ico = "⚠️" if earn["nivel"] == "riesgo" else "📆"
             st.caption(f"{ico} **Earnings** · {earn['texto']}")
 
+        # --- LA ORDEN: exactamente qué contrato comprar (prominente) ---
+        orden_de_compra(s)
+
         izq, der = st.columns(2)
         with izq:
             st.markdown("**Checklist del método** (🔴 obligatoria · 🟡 refuerzo):")
@@ -473,11 +538,13 @@ def tarjeta(s: dict):
                        "Las 🟡 suman calidad, pero no son obligatorias.")
         with der:
             o = s["opcion"]
-            st.markdown("**Opción sugerida:**")
+            st.markdown("**Por qué este contrato:**")
             st.markdown(
-                f"- Tipo: **{o['tipo']}**\n"
-                f"- Strike: **{o['strike']}** (~{o['otm_pct']}% OTM)\n"
-                f"- Vencimiento: **~{o['dias_vencimiento']} días** ({o['vencimiento_aprox']})")
+                f"- Strike ~{o['otm_pct']}% OTM (fuera del dinero): **barato y apalancado** — "
+                "un movimiento chico del activo lo dispara.\n"
+                "- Vencimiento corto: más gamma (sube rápido). **Vende al +100% (dobló)** — "
+                "ahí recuperas todo — o antes de que venza.\n"
+                "- **Riesgo topado en la prima:** nunca pierdes más que lo que pagaste.")
 
         # Cuánto dinero podrías hacer (con la prima real).
         st.divider()
