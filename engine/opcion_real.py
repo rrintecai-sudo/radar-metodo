@@ -60,6 +60,83 @@ def cotizar(ticker: str, tipo: str, strike_sugerido: float, dias: int) -> dict |
         return None
 
 
+def cotizar_por_prima(ticker: str, tipo: str, precio: float, dias: int,
+                      rango: tuple[float, float] | None = None) -> dict | None:
+    """
+    LA REGLA REAL DE CARDONA (día 2): el strike NO se elige por % fuera del dinero,
+    se elige por el PRECIO DE LA PRIMA. Busca, entre los strikes FUERA DEL DINERO,
+    el contrato cuya prima caiga en el rango objetivo del activo
+    (ej. SPY 0.25-0.30, Apple 0.45-0.80, Tesla 2.50-3.00).
+
+    "Estos precios son los que primero se duplican." — A. Cardona
+    Si ninguno cae dentro del rango, toma el más cercano al centro del rango.
+    """
+    from config import PRIMA_OBJETIVO, PRIMA_OBJETIVO_DEFECTO
+    rango = rango or PRIMA_OBJETIVO.get(ticker.upper(), PRIMA_OBJETIVO_DEFECTO)
+    lo, hi = rango
+    centro = (lo + hi) / 2
+    try:
+        t = yf.Ticker(ticker)
+        exps = t.options
+        if not exps:
+            return None
+        objetivo = date.today() + timedelta(days=max(1, dias))
+        exp = min(exps, key=lambda e: abs((date.fromisoformat(e) - objetivo).days))
+        ch = t.option_chain(exp)
+        tabla = ch.calls if tipo.upper() == "CALL" else ch.puts
+        if tabla is None or not len(tabla):
+            return None
+
+        # solo FUERA DEL DINERO (call: strike por encima; put: strike por debajo)
+        if tipo.upper() == "CALL":
+            otm = tabla[tabla["strike"] > precio].copy()
+        else:
+            otm = tabla[tabla["strike"] < precio].copy()
+        if not len(otm):
+            return None
+
+        # prima de cada contrato (último precio, o punto medio bid/ask)
+        def _prima(row):
+            p = float(row.get("lastPrice") or 0)
+            b, a = float(row.get("bid") or 0), float(row.get("ask") or 0)
+            if p <= 0 and (b or a):
+                p = (b + a) / 2
+            return p
+        otm["_prima"] = otm.apply(_prima, axis=1)
+        otm = otm[otm["_prima"] > 0]
+        if not len(otm):
+            return None
+
+        # 1) los que caen DENTRO del rango objetivo -> el más cercano al centro
+        dentro = otm[(otm["_prima"] >= lo) & (otm["_prima"] <= hi)]
+        cand = dentro if len(dentro) else otm
+        idx = (cand["_prima"] - centro).abs().idxmin()
+        row = cand.loc[idx]
+        strike = float(row["strike"])
+        premium = float(row["_prima"])
+
+        # delta aproximado con los strikes vecinos
+        serie = otm.set_index("strike")["_prima"].dropna().sort_index()
+        delta = 0.35
+        try:
+            strikes = list(serie.index)
+            if len(strikes) > 2:
+                paso = abs(strikes[1] - strikes[0]) or 1
+                arriba = serie.get(strike + 2 * paso)
+                abajo = serie.get(strike - 2 * paso)
+                if arriba is not None and abajo is not None:
+                    delta = min(max(abs((abajo - arriba) / (4 * paso)), 0.10), 0.9)
+        except Exception:
+            pass
+
+        dias_real = (date.fromisoformat(exp) - date.today()).days
+        return {"exp": exp, "dias": dias_real, "strike": strike,
+                "premium": round(premium, 2), "delta": round(delta, 2),
+                "rango_prima": rango, "en_rango": bool(len(dentro))}
+    except Exception:
+        return None
+
+
 def proyeccion(precio: float, cot: dict, favorable_pct: float, contratos: int = 1) -> dict:
     """
     Proyecta la ganancia en dólares según escenarios de movimiento del activo.

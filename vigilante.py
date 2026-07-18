@@ -96,11 +96,11 @@ def escanear_y_avisar() -> int:
     if estado.get("fecha") != hoy:
         estado = {"fecha": hoy, "avisadas": []}  # nuevo día, borrón y cuenta nueva
 
-    # SOLO avisar en la VENTANA DE COMPRA (11am–4pm ET). Antes de las 11 no se
-    # compran calls (regla de Cardona) y después de las 4 el mercado cerró:
-    # avisar fuera de esa franja es ruido, porque no vas a comprar.
-    if not (11 <= ahora.hour < 16):
-        print(f"[{ahora.strftime('%H:%M')}] fuera de la ventana de compra (11am–4pm); sin alertas.")
+    # SOLO avisar en la VENTANA DE COMPRA (10am–4pm ET). Empieza a las 10 porque
+    # la 'primera vela roja de apertura' (PUT) se compra a las 10:00 en punto;
+    # los calls siguen siendo desde las 11. Fuera de esa franja, avisar es ruido.
+    if not (10 <= ahora.hour < 16):
+        print(f"[{ahora.strftime('%H:%M')}] fuera de la ventana de compra (10am–4pm); sin alertas.")
         _guardar_estado(estado)
         return 0
 
@@ -116,13 +116,10 @@ def escanear_y_avisar() -> int:
     for s in ops:
         if s["estado"] != "ENTRADA":
             continue
-        # SOLO CALLS por ahora: el método del día 1 (que ya validamos) es de compras.
-        # Los PUTS tienen una excepción de horario que Cardona explica en el día 2;
-        # hasta tenerlo, nuestra lógica de tiempo para puts es incorrecta -> no avisar.
-        if s["direccion"] != "call":
-            continue
+        # PUTS ACTIVOS: ya tenemos sus reglas del día 2 (primera vela roja de
+        # apertura, ruptura del piso del gap, 4 pasos, hanger diario, techo fuerte).
         intervalo = ESTRATEGIAS.get(s["estrategia"], {}).get("intervalo", "1d")
-        es_intra = intervalo == "1h"
+        es_intra = intervalo in ("1h", "30m")
         # las diarias se deciden al cierre: no avisar antes de las 3pm ET
         if not es_intra and ahora.hour < 15:
             continue
@@ -172,7 +169,7 @@ def main():
 
     while True:
         ahora = datetime.now(premarket.ET)
-        en_ventana = premarket.estado_sesion() == "abierto" and 11 <= ahora.hour < 16
+        en_ventana = premarket.estado_sesion() == "abierto" and 10 <= ahora.hour < 16
         if en_ventana:
             try:
                 n = escanear_y_avisar()
@@ -180,7 +177,7 @@ def main():
             except Exception as e:
                 print(f"[vigilante] error en escaneo: {e}")
         else:
-            print(f"[{ahora.strftime('%H:%M')}] fuera de la ventana de compra (11am–4pm ET); en pausa.")
+            print(f"[{ahora.strftime('%H:%M')}] fuera de la ventana de compra (10am–4pm ET); en pausa.")
         time.sleep(cada * 60)
 
 

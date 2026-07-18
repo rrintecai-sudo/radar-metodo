@@ -198,7 +198,47 @@ UMBRAL_SENAL = 60
 # 6) LA OPCIÓN: strike y vencimiento (Guía secc. 9, Compendio 1.4)
 # ---------------------------------------------------------------------------
 # "strike ligeramente fuera del dinero (OTM)": call por encima, put por debajo.
-STRIKE_OTM_PCT = 1.5       # strike ~1.5% OTM (opción BALANCEADA: probable, moderada)
+# ---------------------------------------------------------------------------
+# 6b) LA REGLA REAL DE CARDONA (día 2): el strike se elige por PRECIO DE LA PRIMA
+# ---------------------------------------------------------------------------
+# "Estos precios son los que primero se duplican. Los primeros strikes en lograr
+#  el 100% coincide que tienen estos valores." — A. Cardona (día 2)
+# Se busca el contrato FUERA DEL DINERO cuya prima caiga en este rango.
+# Mismo rango para CALL y para PUT.
+PRIMA_OBJETIVO = {
+    "SPY": (0.25, 0.30), "QQQ": (0.25, 0.30),
+    "AAPL": (0.45, 0.80), "META": (0.45, 0.80),
+    "AMZN": (0.60, 0.80), "NFLX": (0.60, 0.80), "NVDA": (0.60, 0.80),
+    "PLTR": (0.60, 0.80), "GLD": (0.60, 0.80), "XOM": (0.60, 0.80),
+    "CVX": (0.60, 0.80), "TNA": (0.60, 0.80), "MRNA": (0.50, 0.60),
+    "TSLA": (2.50, 3.00),
+    "BAC": (0.10, 0.20), "SLV": (0.10, 0.20), "USO": (0.10, 0.20),
+}
+PRIMA_OBJETIVO_DEFECTO = (0.45, 0.80)   # para los tickers no listados
+
+# Vencimiento POR ESTRATEGIA (días). Cardona día 2: "una semana" como norma,
+# pero cada estrategia necesita su tiempo. ⛔ Prohibido el "hoy para hoy" (0DTE).
+VENCIMIENTO_POR_ESTRATEGIA = {
+    "ma40": 2, "canal": 2, "caida_normal": 2, "caida_fuerte": 2,
+    "gap_normal_alza": 2, "gap_bajista_alza": 2, "gap": 2,
+    "piso_fuerte": 4, "primer_gap_alza": 4,
+    "tres_semanas": 7,
+    # puts
+    "primera_vela_roja": 3, "ruptura_piso_gap": 3, "modelo_4_pasos": 3,
+    "hanger_diario": 5, "techo_fuerte": 4,
+}
+VENCIMIENTO_MINIMO_DIAS = 1   # nunca 0DTE
+
+# Volumen "alto" por activo — SOLO se usa en la estrategia primer gap al alza.
+# "Para las demás yo ni miro el volumen." — A. Cardona
+VOLUMEN_ALTO = {
+    "SPY": 20_000_000, "QQQ": 20_000_000, "AAPL": 12_000_000,
+    "META": 3_000_000, "NFLX": 1_000_000, "TSLA": 15_000_000,
+    "GLD": 2_000_000, "MRNA": 2_000_000, "BAC": 10_000_000,
+}
+VOLUMEN_ALTO_DEFECTO = 3_000_000
+
+STRIKE_OTM_PCT = 1.5       # strike ~1.5% OTM (referencia de respaldo si no hay cadena)
 STRIKE_OTM_AGRESIVO = 6.0  # strike ~6% OTM (opción AGRESIVA / lotería: improbable, ×10 posible)
 VENCIMIENTO_DIAS_AGRESIVO = 7  # vencimiento corto = más apalancamiento (más gamma)
 # "Vencimiento: cortos, máximo ~3 semanas."
@@ -219,6 +259,10 @@ PREMIO_MINIMO_POR_ESTRATEGIA = {
     "gap": 3.0,           # diario -> medio: mínimo ×3
     "piso_fuerte": 3.0,   # 1-4 días -> medio: mínimo ×3
     "tres_semanas": 5.0,  # varios días/semanas -> lento: mínimo ×5
+    # nuevas del día 2
+    "gap_bajista_alza": 2.0, "primer_gap_alza": 3.0,
+    "primera_vela_roja": 2.0, "ruptura_piso_gap": 2.0, "modelo_4_pasos": 2.0,
+    "hanger_diario": 3.0, "techo_fuerte": 3.0,
 }
 PREMIO_PISO_ABSOLUTO = 1.5
 
@@ -280,6 +324,57 @@ ESTRATEGIAS = {
         "ritmo": "⏱️ Intradía",
         "ritmo_txt": "Vigila durante el día · actúa cuando rompe",
         "descripcion": "caída grande (>1.5%) que pasa el MA40 (a veces MA100/200) + ruptura con vela verde -> CALL",
+    },
+    # ---- CALLS nuevas (día 2) ----
+    "gap_bajista_alza": {
+        "nombre": "Gap bajista al alza", "marco": "1h", "intervalo": "1h",
+        "velocidad": "rápida (1-2 días)", "vigilancia": "alta",
+        "ritmo": "⏱️ Intradía", "ritmo_txt": "Confirma a las 11 · avisa que viene la ruptura",
+        "horario": "desde_11",
+        "descripcion": "abre ABAJO y las dos primeras velas son verdes -> CALL. Excepción: SÍ se puede dentro de un canal bajista; además anuncia que la ruptura del techo viene cerca",
+    },
+    "primer_gap_alza": {
+        "nombre": "Primer gap al alza", "marco": "1d+1h", "intervalo": "1d",
+        "velocidad": "3-4 días", "vigilancia": "baja",
+        "ritmo": "🔔 Al cierre", "ritmo_txt": "Se decide 3:58pm · la más exigente (pide volumen)",
+        "horario": "cierre",
+        "descripcion": "viene de una caída, en zona de piso fuerte, salta arriba, primera vela VERDE, respeta el piso del gap todo el día y hay una vela verde sólida con ALTO VOLUMEN -> CALL (patentada)",
+    },
+    # ---- PUTS (día 2) ----
+    "primera_vela_roja": {
+        "nombre": "Primera vela roja de apertura", "marco": "30m", "intervalo": "30m",
+        "velocidad": "1-3 días", "vigilancia": "alta",
+        "ritmo": "🌅 A las 10:00", "ritmo_txt": "LA ÚNICA que se compra a las 10am",
+        "horario": "vela_10",
+        "descripcion": "la primera vela del día (9:30-10:00) cierra ROJA -> PUT a las 10:00 en punto. Contexto: canal bajista o zona de techo",
+    },
+    "ruptura_piso_gap": {
+        "nombre": "Ruptura del piso del gap", "marco": "1h", "intervalo": "1h",
+        "velocidad": "1-3 días", "vigilancia": "alta",
+        "ritmo": "⏱️ Intradía", "ritmo_txt": "Desde las 11 · vela roja final rompe el piso",
+        "horario": "desde_11",
+        "descripcion": "primera vela verde marca el piso del gap; una vela roja FINAL lo rompe -> PUT. Mejor lejos del MA40 en tendencia alcista, o pegado al techo en canal bajista",
+    },
+    "modelo_4_pasos": {
+        "nombre": "Modelo de los 4 pasos", "marco": "1h", "intervalo": "1h",
+        "velocidad": "1-3 días", "vigilancia": "alta",
+        "ritmo": "⏱️ Intradía", "ritmo_txt": "Desde las 11 · dentro del canal, en zona cara",
+        "horario": "desde_11",
+        "descripcion": "dentro de canal bajista + zona cara + una vela roja borra a la verde + rompe la línea de piso -> PUT",
+    },
+    "hanger_diario": {
+        "nombre": "Hanger en diario", "marco": "1d", "intervalo": "1d",
+        "velocidad": "4-5 días", "vigilancia": "baja",
+        "ritmo": "🔔 Al cierre", "ritmo_txt": "Se decide 3:57pm · el color del hanger da igual",
+        "horario": "cierre",
+        "descripcion": "vela diaria con cola larga ARRIBA y cuerpo pequeño (hanger, cualquier color) en zona cara -> PUT",
+    },
+    "techo_fuerte": {
+        "nombre": "Techo fuerte", "marco": "1d+1h", "intervalo": "1d",
+        "velocidad": "3-5 días", "vigilancia": "media",
+        "ritmo": "📅 Diario", "ritmo_txt": "El espejo del piso fuerte · 15-22x",
+        "horario": "desde_11",
+        "descripcion": "en diario MA200 sobre MA100 y techo tocado varias veces; una vela roja sólida rompe la línea de piso -> PUT",
     },
     "gap": {
         "nombre": "Gap al alza",

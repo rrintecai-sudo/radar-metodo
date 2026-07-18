@@ -157,6 +157,12 @@ def cotizacion(ticker: str, tipo: str, strike: float, dias: int) -> dict | None:
 
 
 @st.cache_data(ttl=300, show_spinner=False)
+def cotizacion_por_prima(ticker: str, tipo: str, precio: float, dias: int) -> dict | None:
+    """La regla real de Cardona: el contrato se elige por PRECIO DE LA PRIMA."""
+    return opcion_real.cotizar_por_prima(ticker, tipo, precio, dias)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
 def cotizacion_agresiva(ticker: str, tipo: str, precio: float) -> dict | None:
     """La opción 'lotería': más fuera del dinero y vencimiento corto (×10 posible)."""
     from config import STRIKE_OTM_AGRESIVO, VENCIMIENTO_DIAS_AGRESIVO
@@ -391,7 +397,10 @@ def orden_de_compra(s: dict):
     o = s["opcion"]
     tipo = o["tipo"]
     emoji = "🟢" if tipo == "CALL" else "🔴"
-    cot = s.get("_cot") or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
+    # REGLA DE CARDONA (día 2): el contrato se elige por PRECIO DE LA PRIMA,
+    # no por % fuera del dinero. Si falla, caemos al método anterior.
+    cot = cotizacion_por_prima(s["ticker"], tipo, s["precio"], o["dias_vencimiento"]) \
+        or s.get("_cot") or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
     with st.container(border=True):
         st.markdown(f"#### {emoji} ORDEN DE COMPRA")
         if not cot:
@@ -1104,9 +1113,8 @@ if dashboard:
     # --- filtros (sin "mínimo de condiciones": el ranking lo hace solo) ---
     with st.container(border=True):
         f1, f2 = st.columns([1.2, 1.6])
-        d_dir = f1.radio("Dirección", ["Solo CALL (sube)", "Ambas", "Solo PUT (baja) — pendiente día 2"],
-                         help="Por ahora solo CALLS: el método del día 1 (validado) es de compras. "
-                              "Los PUTS se activan cuando hagamos el día 2 del seminario.")
+        d_dir = f1.radio("Dirección", ["Ambas", "Solo CALL (sube)", "Solo PUT (baja)"],
+                         help="Ya están las dos: 9 estrategias de CALL y 5 de PUT (día 1 + día 2).")
         d_orden = f2.radio("Ordenar por",
                            ["🎯 Oportunidad (equilibrio)", "💡 Valor esperado (matemática)",
                             "💥 Rentabilidad (más ganancia)", "🛡️ Confiabilidad (más segura)",
@@ -1223,8 +1231,8 @@ if ampliado:
         f1, f2, f3 = st.columns([1.1, 1.3, 1.4])
         min_cond = f1.select_slider("Mínimo de condiciones", options=[2, 3, 4, 5], value=4,
                                     help="4 de 5 = señales sólidas. Sube a 5 para las más exigentes.")
-        direccion_f = f2.radio("Dirección", ["Solo CALL (sube)", "Ambas", "Solo PUT (baja) — pendiente día 2"],
-                               help="Por ahora solo CALLS (método del día 1, validado). Los PUTS se activan con el día 2.")
+        direccion_f = f2.radio("Dirección", ["Ambas", "Solo CALL (sube)", "Solo PUT (baja)"],
+                               help="Ya están las dos: 9 estrategias de CALL y 5 de PUT (día 1 + día 2).")
         orden = f3.radio("Ordenar por",
                          ["🎯 Oportunidad (equilibrio)", "💥 Rentabilidad (más ganancia)",
                           "🛡️ Confiabilidad (más segura)"])

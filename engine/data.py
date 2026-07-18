@@ -24,6 +24,7 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 FRESCURA = {
     "1d": 60 * 60,      # datos diarios: 1 hora
     "1h": 8 * 60,       # datos horarios: 8 minutos (para sensación "en vivo")
+    "30m": 5 * 60,      # media hora: 5 minutos (la vela de apertura importa)
     "1wk": 6 * 60 * 60,
 }
 
@@ -31,6 +32,7 @@ FRESCURA = {
 PERIODO = {
     "1d": "2y",
     "1h": "3mo",   # Yahoo limita el intradía; 3 meses de horas alcanza para MA200(h)
+    "30m": "1mo",  # Yahoo solo da ~60 días de 30m; 1 mes basta para la vela de apertura
     "1wk": "5y",
 }
 

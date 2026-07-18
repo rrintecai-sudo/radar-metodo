@@ -211,6 +211,105 @@ def linea_bajista(df: pd.DataFrame, ventana: int = 12) -> dict | None:
     return {"m": m, "b": b, "ventana": ventana, "valor_actual": m * (len(seg) - 1) + b}
 
 
+def es_hanger(vela) -> dict:
+    """
+    ¿Esta vela es un HANGER? (cola larga ARRIBA, cuerpo pequeño).
+    Cardona (día 2): "no interesa el color del hanger; puede ser verde o rojo".
+    Señal BAJISTA cuando aparece en zona cara.
+    """
+    o, c = float(vela["Open"]), float(vela["Close"])
+    h, l = float(vela["High"]), float(vela["Low"])
+    rango = h - l
+    if rango <= 0:
+        return {"hay": False}
+    cuerpo = abs(c - o)
+    cola_sup = h - max(o, c)
+    cola_inf = min(o, c) - l
+    # Cardona: cola larga arriba, cuerpo pequeño. Umbrales prácticos:
+    hay = (cuerpo <= 0.45 * rango            # cuerpo pequeño respecto al rango
+           and cola_sup >= 1.5 * cuerpo      # cola de arriba claramente larga
+           and cola_sup >= 0.45 * rango      # y domina la vela
+           and cola_inf <= 1.0 * cuerpo)     # poca cola abajo (no es martillo)
+    return {"hay": bool(hay), "cuerpo_pct": round(cuerpo / rango * 100),
+            "cola_sup_x": round(cola_sup / cuerpo, 1) if cuerpo else 99}
+
+
+def gap_de_apertura(df: pd.DataFrame) -> dict | None:
+    """
+    Gap del día actual respecto al cierre anterior, y el 'piso del gap'.
+    Cardona: el piso del gap se traza teniendo en cuenta la COLA de la primera vela.
+    Devuelve: direccion ('arriba'/'abajo'), piso del gap y tamaño.
+    """
+    if len(df) < 2:
+        return None
+    hoy, ayer = df.iloc[-1], df.iloc[-2]
+    ap, cierre_prev = float(hoy["Open"]), float(ayer["Close"])
+    if cierre_prev <= 0:
+        return None
+    pct = (ap - cierre_prev) / cierre_prev * 100
+    return {"direccion": "arriba" if ap > cierre_prev else "abajo",
+            "gap_pct": round(pct, 2), "apertura": ap, "cierre_prev": cierre_prev,
+            "piso_gap": float(hoy["Low"])}   # el piso se traza con la cola
+
+
+def gap_de_sesion(df: pd.DataFrame) -> dict | None:
+    """
+    Gap de APERTURA de la sesión, para datos INTRADÍA (1h/30m).
+    Compara la PRIMERA vela del día con el CIERRE del día anterior — que es donde
+    de verdad existe el gap (entre hora y hora dentro del día no hay gap).
+    El 'piso del gap' se traza con la COLA de esa primera vela (regla de Cardona).
+    """
+    if len(df) < 3:
+        return None
+    try:
+        fechas = [t.date() for t in df.index]
+    except Exception:
+        return None
+    hoy = fechas[-1]
+    pos_hoy = [i for i, f in enumerate(fechas) if f == hoy]
+    if not pos_hoy or pos_hoy[0] == 0:
+        return None
+    i0 = pos_hoy[0]
+    ap = float(df.iloc[i0]["Open"])
+    cierre_prev = float(df.iloc[i0 - 1]["Close"])
+    if cierre_prev <= 0:
+        return None
+    pct = (ap - cierre_prev) / cierre_prev * 100
+    return {"direccion": "arriba" if ap > cierre_prev else "abajo",
+            "gap_pct": round(pct, 2), "apertura": ap, "cierre_prev": cierre_prev,
+            "piso_gap": float(df.iloc[i0]["Low"]), "idx_apertura": i0,
+            "velas_sesion": len(pos_hoy)}
+
+
+def canal_alcista_corto(df: pd.DataFrame, ventana: int = 12) -> dict | None:
+    """
+    Línea de PISO que sigue una subida (para PUT: cuando una vela roja la rompe).
+    Es el espejo de linea_bajista: ajusta una recta ascendente sobre los mínimos.
+    """
+    if len(df) < ventana + 1:
+        return None
+    seg = df.iloc[-ventana:]
+    x = list(range(len(seg)))
+    m, b = _recta(x, list(seg["Low"].values))
+    if m <= 0:
+        return None  # no es una línea de piso ascendente
+    return {"m": m, "b": b, "ventana": ventana, "valor_actual": m * (len(seg) - 1) + b}
+
+
+def techo_fuerte_cercano(df: pd.DataFrame) -> dict | None:
+    """
+    ¿El precio está BAJO un techo histórico fuerte? (espejo de piso_fuerte_cercano).
+    Nivel donde el precio se aproximó varias veces y siempre cayó.
+    """
+    cierre = float(df.iloc[-1]["Close"])
+    resistencias = soportes_resistencias(df)["resistencias"]
+    for r in resistencias:
+        dist = (r["precio"] - cierre) / r["precio"] * 100
+        if -SR_CERCANIA_PCT <= dist <= SR_CERCANIA_PCT * 2:
+            return {"precio": r["precio"], "toques": r["toques"], "distancia_pct": dist}
+    return None
+
+
 def ruptura(df: pd.DataFrame, linea_valor: float, direccion: str) -> dict:
     """
     ¿La ÚLTIMA vela rompió la línea con el color correcto?

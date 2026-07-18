@@ -13,7 +13,8 @@ from datetime import timedelta
 
 import pandas as pd
 
-from config import (STRIKE_OTM_PCT, VENCIMIENTO_DIAS_MAX, VENCIMIENTO_DIAS_MIN)
+from config import (STRIKE_OTM_PCT, VENCIMIENTO_DIAS_MAX, VENCIMIENTO_DIAS_MIN,
+                    VENCIMIENTO_MINIMO_DIAS, VENCIMIENTO_POR_ESTRATEGIA)
 
 
 def sugerir_opcion(precio: float, direccion: str, estrategia: str,
@@ -32,15 +33,9 @@ def sugerir_opcion(precio: float, direccion: str, estrategia: str,
         tipo = "PUT"
 
     # Las estrategias rápidas usan el extremo corto del rango; las pausadas el largo.
-    dias = {
-        "ma40": VENCIMIENTO_DIAS_MIN,
-        "canal": VENCIMIENTO_DIAS_MIN + 5,
-        "caida_normal": VENCIMIENTO_DIAS_MIN,
-        "caida_fuerte": VENCIMIENTO_DIAS_MIN,
-        "gap": VENCIMIENTO_DIAS_MIN + 7,
-        "piso_fuerte": VENCIMIENTO_DIAS_MIN + 7,
-        "tres_semanas": VENCIMIENTO_DIAS_MAX,
-    }.get(estrategia, VENCIMIENTO_DIAS_MAX)
+    # Cardona (día 2): cada estrategia necesita SU tiempo, y nunca "hoy para hoy".
+    dias = max(VENCIMIENTO_MINIMO_DIAS,
+               VENCIMIENTO_POR_ESTRATEGIA.get(estrategia, VENCIMIENTO_DIAS_MIN))
 
     venc = None
     if hoy is not None:

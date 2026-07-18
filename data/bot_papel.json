@@ -1,27 +1,5 @@
 {
   "posiciones": {
-    "DIS260731C00097000": {
-      "ticker": "DIS",
-      "contratos_inicial": 1,
-      "contratos_actual": 1,
-      "prima_entrada": 2.05,
-      "pico_plpc": 0.537,
-      "vendido": [],
-      "proceeds": 0.0,
-      "bitacora_id": 1,
-      "fecha": "2026-07-14T09:37"
-    },
-    "SPY260727P00685000": {
-      "ticker": "SPY",
-      "contratos_inicial": 1,
-      "contratos_actual": 1,
-      "prima_entrada": 0.21,
-      "pico_plpc": 0.0,
-      "vendido": [],
-      "proceeds": 0.0,
-      "bitacora_id": 2,
-      "fecha": "2026-07-14T14:52"
-    },
     "BA260807C00235000": {
       "ticker": "BA",
       "contratos_inicial": 1,
@@ -43,6 +21,17 @@
       "proceeds": 0.0,
       "bitacora_id": 9,
       "fecha": "2026-07-15T15:56"
+    },
+    "SPY260807C00790000": {
+      "ticker": "SPY",
+      "contratos_inicial": 10,
+      "contratos_actual": 10,
+      "prima_entrada": 0.13,
+      "pico_plpc": 0.077,
+      "vendido": [],
+      "proceeds": 0.0,
+      "bitacora_id": 10,
+      "fecha": "2026-07-17T11:37"
     }
   }
 }

@@ -41,12 +41,13 @@ def _vela_final_intradia(df: pd.DataFrame, intervalo: str, ahora: datetime) -> t
          candado de las 11am). None si no es intradía o no se pudo calcular.
     En datos históricos (backtest) no recorta nada: todas las velas ya cerraron.
     """
-    if intervalo != "1h" or len(df) < 3:
+    if intervalo not in ("1h", "30m") or len(df) < 3:
         return df, None
     try:
+        dur = pd.Timedelta(hours=1) if intervalo == "1h" else pd.Timedelta(minutes=30)
         idx = df.index
         idx_et = idx.tz_convert(ET) if idx.tz is not None else idx.tz_localize(ET)
-        cierre = idx_et + pd.Timedelta(hours=1)          # yfinance etiqueta por inicio
+        cierre = idx_et + dur                             # yfinance etiqueta por inicio
         cerradas = cierre <= ahora                        # solo velas ya terminadas
         df2 = df[cerradas] if cerradas.any() else df
         ult_cierre = (idx_et[cerradas][-1] + pd.Timedelta(hours=1)) if cerradas.any() else None
@@ -270,6 +271,93 @@ def _eval_gap(df: pd.DataFrame) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# CALLS del día 2: gap bajista al alza y primer gap al alza
+# ---------------------------------------------------------------------------
+def _dos_velas_verdes(df: pd.DataFrame, i0: int) -> bool:
+    """
+    Las DOS PRIMERAS velas de la sesión (desde i0) son verdes.
+    Este es el corazón de los gaps: "abre abajo, verde, verde".
+    """
+    if i0 is None or len(df) < i0 + 2:
+        return False
+    a, b = df.iloc[i0], df.iloc[i0 + 1]
+    return (float(a["Close"]) > float(a["Open"])) and (float(b["Close"]) > float(b["Open"]))
+
+
+def _eval_gap_bajista_alza(df: pd.DataFrame) -> dict:
+    """
+    Gap bajista al alza (1h): ABRE ABAJO y las dos velas siguientes son verdes -> CALL.
+    Excepción de Cardona: SÍ se puede dentro de un canal bajista. Además anuncia
+    que la ruptura del techo viene cerca.
+    """
+    chk = _nuevo_checklist()
+    precio = float(df.iloc[-1]["Close"])
+    g = zn.gap_de_sesion(df)
+    rup = {"hay": False, "texto": "Sin gap bajista"}
+    if g and g["direccion"] == "abajo" and abs(g["gap_pct"]) >= 0.15:
+        chk["zona"] = {"ok": True, "detalle": f"Abrió ABAJO {g['gap_pct']:.1f}% (gap bajista)"}
+        if _dos_velas_verdes(df, g.get("idx_apertura")):
+            chk["ruptura"] = {"ok": True, "detalle": "Las dos velas siguientes son VERDES (abre abajo, verde, verde)"}
+            rup = {"hay": True, "texto": "Gap bajista al alza confirmado"}
+    if ind.medias_alineadas(df, 20, 40):
+        chk["media"] = {"ok": True, "detalle": "Tendencia al alza (20 sobre 40)"}
+    for p in (40, 100, 200):
+        if zn.tocando_media(df, p):
+            chk["soporte"] = {"ok": True, "detalle": f"Confluencia con MA{p}"}
+            break
+    sv = ind.senal_vela(df, "call")
+    if sv["hay"]:
+        chk["vela"] = {"ok": True, "detalle": sv["texto"]}
+    geo = {"gap": g, "enfasis_medias": [20, 40], "ruptura": rup,
+           "vela_patron": sv.get("patron"), "vela_ok": sv["hay"]}
+    return {"direccion": "call", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+def _eval_primer_gap_alza(ticker: str, df: pd.DataFrame) -> dict:
+    """
+    Primer gap al alza (1d, se decide al CIERRE). La más exigente:
+    viene de caída + zona de piso fuerte + salta arriba + PRIMERA VELA VERDE +
+    respeta el piso del gap con el cuerpo + una vela verde sólida con ALTO VOLUMEN.
+    """
+    from config import VOLUMEN_ALTO, VOLUMEN_ALTO_DEFECTO
+    chk = _nuevo_checklist()
+    v = df.iloc[-1]
+    precio = float(v["Close"])
+    g = zn.gap_de_apertura(df)
+    rup = {"hay": False, "texto": "No cumple el primer gap al alza"}
+
+    piso = zn.piso_fuerte_cercano(df)
+    cerca_fondo = piso is not None or zn.tocando_media(df, 100) or zn.tocando_media(df, 200)
+    if piso:
+        chk["soporte"] = {"ok": True, "detalle": f"Zona de piso fuerte {piso['precio']:.2f} ({piso['toques']} toques)"}
+    elif cerca_fondo:
+        chk["soporte"] = {"ok": True, "detalle": "En zona de piso (MA100/MA200)"}
+
+    if g and g["direccion"] == "arriba" and cerca_fondo:
+        chk["zona"] = {"ok": True,
+                       "detalle": f"Salto al alza {g['gap_pct']:.1f}% desde zona de piso fuerte"}
+        verde = float(v["Close"]) > float(v["Open"])
+        # respeta el piso del gap CON EL CUERPO (la cola puede salirse)
+        respeta = min(float(v["Open"]), float(v["Close"])) >= g["cierre_prev"]
+        vol = float(v.get("Volume") or 0)
+        vol_alto = vol >= VOLUMEN_ALTO.get(ticker.upper(), VOLUMEN_ALTO_DEFECTO)
+        if vol_alto:
+            chk["media"] = {"ok": True, "detalle": f"Volumen ALTO ({vol/1e6:.1f}M) — requisito exclusivo de esta estrategia"}
+        if verde and respeta and vol_alto:
+            chk["ruptura"] = {"ok": True,
+                              "detalle": "Primera vela VERDE, respeta el piso del gap y hay volumen alto"}
+            rup = {"hay": True, "texto": "Primer gap al alza confirmado"}
+    sv = ind.senal_vela(df, "call")
+    if sv["hay"]:
+        chk["vela"] = {"ok": True, "detalle": sv["texto"]}
+    geo = {"gap": g, "piso": piso, "enfasis_medias": [100, 200], "ruptura": rup,
+           "vela_patron": sv.get("patron"), "vela_ok": sv["hay"]}
+    return {"direccion": "call", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+# ---------------------------------------------------------------------------
 # Estrategias basadas en nivel fijo (piso fuerte / tres semanas)
 # ---------------------------------------------------------------------------
 def _eval_piso_fuerte(df: pd.DataFrame) -> dict:
@@ -339,6 +427,200 @@ def _eval_tres_semanas(df: pd.DataFrame) -> dict:
             "precio": precio, "geo": geo}
 
 
+# ---------------------------------------------------------------------------
+# PUTS (día 2) — las cinco estrategias bajistas
+# ---------------------------------------------------------------------------
+def _vela_apertura(df: pd.DataFrame):
+    """La vela de APERTURA (9:30-10:00) de la sesión más reciente. None si no está."""
+    try:
+        idx = df.index
+        idx_et = idx.tz_convert(ET) if idx.tz is not None else idx.tz_localize(ET)
+        es_apertura = [(t.hour == 9 and t.minute == 30) for t in idx_et]
+        pos = [i for i, ok in enumerate(es_apertura) if ok]
+        return df.iloc[pos[-1]] if pos else None
+    except Exception:
+        return None
+
+
+def _eval_primera_vela_roja(df: pd.DataFrame) -> dict:
+    """
+    Primera vela roja de apertura (30m, 10:00 en punto). LA ÚNICA que se compra
+    a las 10am: si la vela 9:30-10:00 cierra ROJA -> PUT.
+    Contexto ideal: canal bajista o zona cara/techo.
+    """
+    chk = _nuevo_checklist()
+    precio = float(df.iloc[-1]["Close"])
+    v = _vela_apertura(df)
+    if v is None:
+        geo = {"enfasis_medias": [20, 40], "ruptura": {"hay": False, "texto": "Sin vela de apertura"},
+               "vela_patron": None, "vela_ok": False}
+        return {"direccion": "put", "checklist": chk, "ruptura_ok": False,
+                "precio": precio, "geo": geo}
+    roja = float(v["Close"]) < float(v["Open"])
+    rup = {"hay": False, "texto": "La primera vela no es roja"}
+
+    # zona: cara / techo / canal bajista (donde esta señal tiene poder)
+    d40 = zn.distancia_a_medias(df).get("MA40")
+    techo = zn.techo_fuerte_cercano(df)
+    canal = zn.detectar_canal(df, ventana=40)
+    en_zona = (techo is not None) or (d40 is not None and d40 > 0) or \
+              (canal is not None and canal["direccion"] == "bajista")
+    if en_zona:
+        det = "Zona cara / de techo" if (techo or (d40 or 0) > 0) else "Dentro de canal bajista"
+        chk["zona"] = {"ok": True, "detalle": f"{det} — donde la primera vela roja tiene poder"}
+    if techo:
+        chk["soporte"] = {"ok": True, "detalle": f"Techo histórico {techo['precio']:.2f} ({techo['toques']} toques)"}
+    if ind.medias_alineadas(df, 40, 20):
+        chk["media"] = {"ok": True, "detalle": "Tendencia bajista (40 sobre 20)"}
+    if roja:
+        chk["vela"] = {"ok": True, "detalle": "Primera vela del día ROJA (señal bajista)"}
+        if en_zona:
+            chk["ruptura"] = {"ok": True, "detalle": "Primera vela roja de apertura confirmada — compra a las 10:00"}
+            rup = {"hay": True, "texto": "Primera vela roja de apertura"}
+    geo = {"enfasis_medias": [20, 40], "ruptura": rup, "techo": techo,
+           "vela_patron": "primera_roja" if roja else None, "vela_ok": roja}
+    return {"direccion": "put", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+def _eval_ruptura_piso_gap(df: pd.DataFrame) -> dict:
+    """
+    Ruptura del piso del gap (1h, desde las 11). La primera vela verde marca el
+    piso del gap; una vela ROJA final lo rompe -> PUT.
+    Mejor: lejos del MA40 en tendencia alcista, o pegado al techo en canal bajista.
+    """
+    chk = _nuevo_checklist()
+    precio = float(df.iloc[-1]["Close"])
+    g = zn.gap_de_sesion(df)
+    rup = {"hay": False, "texto": "Sin ruptura del piso del gap"}
+    d40 = zn.distancia_a_medias(df).get("MA40")
+
+    if g:
+        piso = g["piso_gap"]
+        chk["zona"] = {"ok": True, "detalle": f"Piso del gap en {piso:.2f} (trazado con la cola)"}
+        r = zn.ruptura(df, piso, "put")   # vela roja sólida cierra por debajo
+        if r["hay"]:
+            chk["ruptura"] = {"ok": True, "detalle": "Vela ROJA final rompió el piso del gap"}
+            rup = r
+    # contextos que Cardona marcó como los mejores
+    if d40 is not None and d40 > 3:
+        chk["media"] = {"ok": True, "detalle": f"Lejos del MA40 ({d40:+.1f}%) — contexto ideal para este put"}
+    canal = zn.detectar_canal(df, ventana=40)
+    if canal and canal["direccion"] == "bajista":
+        chk["soporte"] = {"ok": True, "detalle": "Dentro de canal bajista (mejor cuanto más cerca del techo)"}
+    sv = ind.senal_vela(df, "put")
+    if sv["hay"]:
+        chk["vela"] = {"ok": True, "detalle": sv["texto"]}
+    geo = {"gap": g, "enfasis_medias": [20, 40], "ruptura": rup,
+           "vela_patron": sv.get("patron"), "vela_ok": sv["hay"]}
+    return {"direccion": "put", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+def _eval_modelo_4_pasos(df: pd.DataFrame) -> dict:
+    """
+    Modelo de los 4 pasos (1h): dentro de canal bajista + zona cara +
+    una vela roja borra a la verde + rompe la línea de piso -> PUT.
+    """
+    chk = _nuevo_checklist()
+    precio = float(df.iloc[-1]["Close"])
+    canal = zn.detectar_canal(df, ventana=40)
+    rup = {"hay": False, "texto": "Sin ruptura de la línea de piso"}
+
+    # 1 y 2: dentro de canal bajista y en la parte ALTA (zona cara)
+    if canal and canal["direccion"] == "bajista":
+        alto = canal["techo"] - 0.35 * (canal["techo"] - canal["piso"])
+        if precio >= alto:
+            chk["zona"] = {"ok": True, "detalle": "Dentro de canal bajista y en la parte ALTA (zona cara)"}
+        else:
+            chk["soporte"] = {"ok": True, "detalle": "Dentro de canal bajista (aún no en la parte alta)"}
+    # 3: verde-rojo (la roja borra a la verde)
+    if len(df) >= 2:
+        a, b = df.iloc[-2], df.iloc[-1]
+        verde_prev = float(a["Close"]) > float(a["Open"])
+        roja_hoy = float(b["Close"]) < float(b["Open"])
+        borra = roja_hoy and float(b["Close"]) <= float(a["Open"])
+        if verde_prev and borra:
+            chk["vela"] = {"ok": True, "detalle": "Verde-rojo: la vela roja BORRA a la verde"}
+    # 4: línea de piso rota por vela roja
+    lp = zn.canal_alcista_corto(df, ventana=10)
+    if lp:
+        r = zn.ruptura(df, lp["valor_actual"], "put")
+        if r["hay"]:
+            chk["ruptura"] = {"ok": True, "detalle": "Vela ROJA rompió la línea de piso de la subida"}
+            rup = r
+    if ind.medias_alineadas(df, 40, 20):
+        chk["media"] = {"ok": True, "detalle": "Tendencia bajista (40 sobre 20)"}
+    geo = {"canal": canal, "linea_piso": lp, "enfasis_medias": [20, 40], "ruptura": rup,
+           "vela_patron": None, "vela_ok": chk["vela"]["ok"]}
+    return {"direccion": "put", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+def _eval_hanger_diario(df: pd.DataFrame) -> dict:
+    """
+    Hanger en diario (1d, se decide 3:57pm): vela diaria con cola larga ARRIBA y
+    cuerpo pequeño (el COLOR da igual) en zona cara -> PUT.
+    """
+    chk = _nuevo_checklist()
+    v = df.iloc[-1]
+    precio = float(v["Close"])
+    hg = zn.es_hanger(v)
+    rup = {"hay": False, "texto": "La vela de hoy no es un hanger"}
+
+    d40 = zn.distancia_a_medias(df).get("MA40")
+    techo = zn.techo_fuerte_cercano(df)
+    cara = (d40 is not None and d40 > 0) or techo is not None
+    if cara:
+        det = f"Zona cara ({d40:+.1f}% sobre el MA40)" if d40 is not None else "Zona de techo"
+        chk["zona"] = {"ok": True, "detalle": f"{det} — espacio para caer"}
+    if techo:
+        chk["soporte"] = {"ok": True, "detalle": f"Techo histórico {techo['precio']:.2f} ({techo['toques']} toques)"}
+    if ind.medias_alineadas(df, 200, 100):
+        chk["media"] = {"ok": True, "detalle": "Diario bajista (200 sobre 100)"}
+    if hg["hay"]:
+        chk["vela"] = {"ok": True,
+                       "detalle": f"HANGER diario (cuerpo {hg['cuerpo_pct']}% del rango, cola arriba ×{hg['cola_sup_x']}) — el color da igual"}
+        if cara:
+            chk["ruptura"] = {"ok": True, "detalle": "Hanger confirmado en zona cara — compra 3:57pm"}
+            rup = {"hay": True, "texto": "Hanger en diario"}
+    geo = {"enfasis_medias": [100, 200], "ruptura": rup, "techo": techo,
+           "vela_patron": "hanger" if hg["hay"] else None, "vela_ok": hg["hay"]}
+    return {"direccion": "put", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
+def _eval_techo_fuerte(df: pd.DataFrame) -> dict:
+    """
+    Techo fuerte (1d): el espejo exacto del piso fuerte.
+    Diario MA200 sobre MA100 + techo tocado varias veces; una vela roja sólida
+    rompe la línea de piso -> PUT. La de mayor magnitud (15-22x según Cardona).
+    """
+    chk = _nuevo_checklist()
+    precio = float(df.iloc[-1]["Close"])
+    techo = zn.techo_fuerte_cercano(df)
+    rup = {"hay": False, "texto": "Sin ruptura de la línea de piso"}
+
+    if techo:
+        chk["zona"] = {"ok": True, "detalle": f"En techo fuerte {techo['precio']:.2f} ({techo['toques']} rechazos)"}
+        chk["soporte"] = {"ok": True, "detalle": f"Nivel histórico con {techo['toques']} caídas previas"}
+    if ind.medias_alineadas(df, 200, 100):
+        chk["media"] = {"ok": True, "detalle": "MA200 sobre MA100 en diario (contexto de techo)"}
+    sv = ind.senal_vela(df, "put")
+    if sv["hay"]:
+        chk["vela"] = {"ok": True, "detalle": sv["texto"]}
+    lp = zn.canal_alcista_corto(df, ventana=10)
+    if lp and techo:
+        r = zn.ruptura(df, lp["valor_actual"], "put")
+        if r["hay"]:
+            chk["ruptura"] = {"ok": True, "detalle": "Vela ROJA sólida rompió la línea de piso en el techo"}
+            rup = r
+    geo = {"techo": techo, "linea_piso": lp, "enfasis_medias": [100, 200], "ruptura": rup,
+           "vela_patron": sv.get("patron"), "vela_ok": sv["hay"]}
+    return {"direccion": "put", "checklist": chk, "ruptura_ok": rup["hay"],
+            "precio": precio, "geo": geo}
+
+
 _EVALUADORES = {
     "ma40": _eval_ma40,
     "canal": _eval_canal,
@@ -347,6 +629,15 @@ _EVALUADORES = {
     "gap": _eval_gap,
     "piso_fuerte": _eval_piso_fuerte,
     "tres_semanas": _eval_tres_semanas,
+    # día 2 — calls
+    "gap_bajista_alza": _eval_gap_bajista_alza,
+    "primer_gap_alza": None,          # necesita el ticker (volumen) -> caso especial
+    # día 2 — puts
+    "primera_vela_roja": _eval_primera_vela_roja,
+    "ruptura_piso_gap": _eval_ruptura_piso_gap,
+    "modelo_4_pasos": _eval_modelo_4_pasos,
+    "hanger_diario": _eval_hanger_diario,
+    "techo_fuerte": _eval_techo_fuerte,
 }
 
 
@@ -365,25 +656,51 @@ def evaluar(ticker: str, df: pd.DataFrame, estrategia: str) -> dict:
     # Reglas de horario de Cardona (solo intradía): vela final + candado 11am.
     df, hora_cierre = _vela_final_intradia(df, intervalo, ahora)
 
-    r = _EVALUADORES[estrategia](df)
+    ev = _EVALUADORES[estrategia]
+    r = _eval_primer_gap_alza(ticker, df) if ev is None else ev(df)
     chk = r["checklist"]
     score = _score(chk)
     estado = _estado(score, chk)
 
-    # CANDADO DE HORARIO: nunca una ENTRADA de call antes de las 11am ET.
-    # Si la vela que confirma cerró antes de las 11, se degrada a VIGILAR.
+    # CANDADO DE HORARIO POR ESTRATEGIA (Cardona día 1 + las 3 excepciones del día 2):
+    #   "desde_11" -> la vela que confirma debe cerrar a las 11:00 ET o después
+    #   "vela_10"  -> primera vela roja de apertura: se compra a las 10:00 en punto
+    #   "cierre"   -> primer gap al alza / hanger diario: se deciden ~3:57-3:59pm
     aviso_horario = None
-    if intervalo == "1h" and estado == "ENTRADA" and hora_cierre is not None \
-            and hora_cierre < HORA_MINIMA_CALL:
-        estado = "VIGILAR"
-        aviso_horario = ("⏳ Antes de las 11am ET — regla de Cardona: espera. "
-                         "La vela de las 10 y la primera vela verde engañan.")
+    horario = ESTRATEGIAS[estrategia].get("horario", "desde_11")
+    hora_ahora = ahora.hour + ahora.minute / 60.0
+    # Los candados de RELOJ solo tienen sentido si la señal es de HOY y está viva.
+    # En backtest (velas históricas) o fin de semana no aplican: esa vela ya cerró.
+    try:
+        es_hoy = df.index[-1].date() == ahora.date()
+    except Exception:
+        es_hoy = False
+    en_mercado = es_hoy and ahora.weekday() < 5 and 9.5 <= hora_ahora <= 16.25
+
+    if estado == "ENTRADA":
+        if horario == "desde_11" and intervalo in ("1h", "30m") \
+                and hora_cierre is not None and hora_cierre < HORA_MINIMA_CALL:
+            estado = "VIGILAR"
+            aviso_horario = ("⏳ Antes de las 11am ET — regla de Cardona: espera. "
+                             "La vela de las 10 y la primera vela verde engañan.")
+        elif horario == "vela_10" and en_mercado and hora_ahora < 10.0:
+            estado = "VIGILAR"
+            aviso_horario = "⏳ Espera a que cierre la primera vela (10:00 en punto) para comprar el PUT."
+        elif horario == "vela_10" and en_mercado and hora_ahora > 11.0:
+            estado = "VIGILAR"
+            aviso_horario = ("⌛ El momento de esta estrategia era a las 10:00 y ya pasó. "
+                             "Déjala para mañana; no la persigas.")
+        elif horario == "cierre" and en_mercado and hora_ahora < 15.9:
+            estado = "VIGILAR"
+            aviso_horario = ("🔔 Esta estrategia se decide AL CIERRE (3:57-3:59pm). "
+                             "La vela del día todavía se está formando.")
 
     # REGLA DE ZONA CARA: no comprar calls muy por encima del promedio (Cardona:
     # "no comprar lejos del promedio, tras una gran subida — esperar la corrección").
     # NO aplica al gap: un gap al alza ES un salto por encima del promedio a propósito
     # (es estrategia de impulso, no de comprar-en-la-caída).
-    if r["direccion"] == "call" and estado == "ENTRADA" and estrategia != "gap":
+    ES_GAP = ("gap", "gap_bajista_alza", "primer_gap_alza")
+    if r["direccion"] == "call" and estado == "ENTRADA" and estrategia not in ES_GAP:
         d40 = zn.distancia_a_medias(df).get("MA40")
         if d40 is not None and d40 > ZONA_CARA_PCT:
             estado = "VIGILAR"
