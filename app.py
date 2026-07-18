@@ -228,16 +228,20 @@ def panel_dinero(s: dict):
         t3 = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 3, tp)
         t5 = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 5, tp)
         t10 = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 10, tp)
-        st.markdown("**¿Qué tan factible es cada multiplicación, y EN CUÁNTO TIEMPO?**")
-        fp = pd.DataFrame([
+        # 📊 EL MAPA DE DECISIÓN (visual: probabilidad vs tiempo)
+        st.markdown("**📊 Mapa de decisión — probabilidad vs. tiempo**")
+        grafico_prob_tiempo(s, cot, h, tp, key=f"{s['ticker']}_{s['estrategia']}")
+
+        with st.expander("Ver los mismos números en tabla"):
+          fp = pd.DataFrame([
             {"Multiplicar": "×2 (doblar, +100%)", "Probabilidad": f"{p2}%", "⏱️ Tiempo típico": fmt_d(t2)},
             {"Multiplicar": "×3 (+200%)", "Probabilidad": f"{p3}%", "⏱️ Tiempo típico": fmt_d(t3)},
             {"Multiplicar": "×5 (+400%)", "Probabilidad": f"{p5}%", "⏱️ Tiempo típico": fmt_d(t5)},
             {"Multiplicar": "×10 (+1000%)", "Probabilidad": f"{p10}%", "⏱️ Tiempo típico": fmt_d(t10)},
-        ])
-        st.dataframe(fp, hide_index=True, use_container_width=True)
-        st.caption("👉 Ahora sí decides bien: un ×2 en ~1 día es un negoción; un ×2 en ~7 días, según tu regla, "
-                   "no vale la pena. **El multiplicador SIN el tiempo engaña.**")
+          ])
+          st.dataframe(fp, hide_index=True, use_container_width=True)
+          st.caption("El multiplicador SIN el tiempo engaña: un ×2 en ~1 día es un negoción; "
+                     "un ×2 en ~7 días, según tu regla, no vale la pena.")
         # --- la opción AGRESIVA (billete de lotería) — en desplegable para no cargar de más ---
         with st.expander("🎰 ¿Y si busco el moonshot (×10)? — ver la opción agresiva"):
           cot_ag = cotizacion_agresiva(s["ticker"], o["tipo"], s["precio"])
@@ -376,6 +380,51 @@ def grafico(señal: dict):
     return viz.figura_detallada(df, señal, n_velas=n)
 
 
+def grafico_prob_tiempo(s: dict, cot: dict, h: dict, tp: str, key: str):
+    """
+    📊 EL MAPA DE DECISIÓN: probabilidad (eje Y) vs tiempo (eje X) para cada meta.
+    De un vistazo ves el trade-off: arriba-izquierda = rápido y probable (bueno);
+    abajo-derecha = lento e improbable (malo). La zona verde es donde vale la pena.
+    """
+    import plotly.graph_objects as go
+    metas = [("×1.5", 1.5), ("×2 (dobla)", 2), ("×3", 3), ("×5", 5), ("×10", 10)]
+    xs, ys, txt, cols = [], [], [], []
+    for etiqueta, n in metas:
+        p = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], n, tp)
+        t = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], n, tp)
+        if p is None or t is None or p <= 0:
+            continue
+        xs.append(round(float(t), 1)); ys.append(float(p)); txt.append(etiqueta)
+        # verde si es rápido Y probable; ámbar si uno de los dos; gris si ninguno
+        cols.append("#0E7C6B" if (t <= 3 and p >= 60) else
+                    ("#B8860B" if (t <= 5 and p >= 40) else "#9AA0A6"))
+    if not xs:
+        return
+    fig = go.Figure()
+    # zona "vale la pena": rápido (≤3 días) y probable (≥60%)
+    fig.add_shape(type="rect", x0=0, x1=3, y0=60, y1=100, fillcolor="#0E7C6B",
+                  opacity=.10, line=dict(width=0), layer="below")
+    fig.add_annotation(x=1.5, y=95, text="ZONA BUENA<br>rápido y probable",
+                       showarrow=False, font=dict(size=10, color="#0E7C6B"))
+    fig.add_trace(go.Scatter(
+        x=xs, y=ys, mode="markers+text", text=txt, textposition="top center",
+        textfont=dict(size=12, color="#3A3F47"),
+        marker=dict(size=[max(14, min(30, p / 3)) for p in ys], color=cols,
+                    line=dict(width=2, color="white")),
+        hovertemplate="<b>%{text}</b><br>%{y:.0f}% de probabilidad<br>en ~%{x} días<extra></extra>"))
+    fig.update_layout(
+        height=330, margin=dict(l=10, r=10, t=30, b=10),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(title="⏱️ Días que tarda", gridcolor="#E9EDEE", zeroline=False,
+                   range=[0, max(xs) * 1.25 + .5]),
+        yaxis=dict(title="🎯 Probabilidad (%)", gridcolor="#E9EDEE", range=[0, 105], zeroline=False),
+        showlegend=False)
+    st.plotly_chart(fig, use_container_width=True, key=f"pt_{key}")
+    st.caption("👉 **Cómo leerlo:** cada burbuja es una meta. Mientras más **arriba**, más probable; "
+               "mientras más a la **izquierda**, más rápido. Las de la **zona verde** son las que "
+               "valen la pena. Si todas caen abajo-derecha, esa opción es lenta e improbable: **pasa**.")
+
+
 def _fecha_es(iso: str) -> str:
     """Convierte '2026-07-24' en 'viernes 24-jul' (para leer el vencimiento fácil)."""
     try:
@@ -415,6 +464,26 @@ def orden_de_compra(s: dict):
         venc = _fecha_es(cot["exp"])
         st.markdown(f"## {tipo} · {s['ticker']} · strike {cot['strike']}")
         st.markdown(f"**Vence {venc}** · en {cot['dias']} días")
+
+        # ⏱️ FRESCURA: ¿cuánto tiempo llevas para actuar sobre esta señal?
+        try:
+            from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+            _ET = _tz(_td(hours=-4))
+            t_senal = pd.to_datetime(s["fecha"])
+            t_senal = t_senal.tz_convert(_ET) if t_senal.tzinfo else t_senal.tz_localize(_ET)
+            mins = (_dt.now(_ET) - t_senal.to_pydatetime()).total_seconds() / 60
+            intradia_s = ESTRATEGIAS[s["estrategia"]]["intervalo"] in ("1h", "30m")
+            if intradia_s and mins >= 0:
+                if mins <= 20:
+                    st.success(f"⏱️ **Señal FRESCA** (hace {mins:.0f} min) — este es el mejor momento para entrar.")
+                elif mins <= 60:
+                    st.warning(f"⏱️ Señal de hace **{mins:.0f} min** — todavía sirve, pero entra ya: "
+                               "mientras más esperas, peor el precio.")
+                else:
+                    st.error(f"⌛ Señal de hace **{mins/60:.1f} h** — **ya pasó su momento.** "
+                             "No la persigas; espera la próxima.")
+        except Exception:
+            pass
         a, b = st.columns(2)
         a.success(
             "**✅ Esto es EXACTO — tecléalo así en uCharts:**\n\n"
