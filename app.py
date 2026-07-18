@@ -422,11 +422,24 @@ def orden_de_compra(s: dict):
             f"- Activo: **{s['ticker']}**\n"
             f"- Strike: **{cot['strike']}**\n"
             f"- Vencimiento: **{cot['exp']}** ({venc})")
-        b.warning(
-            "**⚠️ Esto es ESTIMADO — confírmalo en uCharts:**\n\n"
-            f"- Prima: **~${prima}** por acción\n"
-            f"- Costo de 1 contrato: **~${costo1}**\n\n"
-            "El **precio exacto** lo ves en tu bróker al comprar. **Ese manda**, no este estimado.")
+        # precio REAL de compra (el ask) + transparencia de spread y liquidez
+        bid, ask = cot.get("bid"), cot.get("ask")
+        sp, sp_pct = cot.get("spread"), cot.get("spread_pct")
+        liq = cot.get("liquido")
+        detalle = f"- **Pagas: ${prima}** por acción (precio ASK real)\n" \
+                  f"- **1 contrato = ${costo1}**\n"
+        if bid and ask:
+            detalle += f"- Compra/venta: bid ${bid} · ask ${ask}"
+            if sp is not None:
+                detalle += f" · spread ${sp} ({sp_pct}%)\n"
+            else:
+                detalle += "\n"
+        if cot.get("interes_abierto"):
+            detalle += f"- Contratos abiertos: {cot['interes_abierto']:,} " \
+                       f"{'✅ líquido' if liq else '⚠️ poco líquido'}\n"
+        b.info("**💵 Precio REAL de compra:**\n\n" + detalle +
+               "\nEste es el **ask del mercado** — lo que pagas al comprar ahora. "
+               "Puede moverse unos centavos; confírmalo al ejecutar.")
         # cuántos contratos, según tu riesgo (10% de la cuenta)
         cuenta = st.number_input(
             "Tu cuenta ($) — para calcular cuántos contratos comprar",
@@ -437,8 +450,24 @@ def orden_de_compra(s: dict):
         n_cont = max(1, int(riesgo // costo1)) if costo1 else 1
         st.info(
             f"🛡️ Arriesga máximo el **{RIESGO_MAX_CAPITAL_PCT}%** de tu cuenta = **${riesgo}**. "
-            f"A ~${costo1} por contrato → **compra ~{n_cont} contrato(s)** (arriesgas ~${n_cont * costo1}). "
-            "Ajusta la cantidad según la prima REAL que veas en uCharts.")
+            f"A ${costo1} por contrato → **compra {n_cont} contrato(s)** (arriesgas ${n_cont * costo1}).")
+
+        # --- UN CLIC: registrar la compra en la bitácora, sin teclear nada ---
+        bc = st.columns([1, 1, 2])
+        n_final = bc[0].number_input("Contratos", min_value=1, value=int(n_cont), step=1,
+                                     key=f"nc_{s['ticker']}_{s['estrategia']}")
+        libro_r = bc[1].selectbox("Libro", ["simulacion", "real"],
+                                  key=f"lb_{s['ticker']}_{s['estrategia']}")
+        if bc[2].button("📔 Ya la compré — registrar en bitácora",
+                        key=f"reg_{s['ticker']}_{s['estrategia']}", use_container_width=True):
+            bitacora.agregar(libro_r, s["ticker"], s["direccion"], s["estrategia"],
+                             cot["strike"], prima, int(n_final),
+                             nota=f"{s['estrategia_nombre']} · registrada desde la orden",
+                             vencimiento=cot["exp"])
+            st.success(f"✅ Registrada: {tipo} {s['ticker']} {cot['strike']} × {n_final} "
+                       f"a ${prima} · vence {cot['exp']}. El Vigilante ya te avisará cuándo vender.")
+        st.caption("Al registrarla, el Vigilante empieza a vigilar su venta: te avisa si dobla, "
+                   "si aparece la señal de salida o si se acerca el vencimiento.")
 
 
 def tarjeta(s: dict):
@@ -917,12 +946,51 @@ def render_bitacora():
                 st.markdown(f"<div style='background:{col}14;border-left:4px solid {col};border-radius:6px;"
                             f"padding:5px 10px;font-size:.85rem;color:{col};font-weight:600;'>{txt}</div>",
                             unsafe_allow_html=True)
-                cc = st.columns([2, 1, 1])
-                ps = cc[0].number_input("Prima de SALIDA ($)", min_value=0.0, step=0.05, key=f"ps_{t['id']}")
-                if cc[1].button("✓ Cerrar", key=f"cerrar_{t['id']}", use_container_width=True):
+                # 💰 PRECIO ACTUAL en vivo: cuánto vale AHORA tu contrato exacto
+                venc = t.get("vencimiento") or ""
+                dias_v = None
+                cot_ahora = None
+                try:
+                    from datetime import date as _d
+                    dias_v = (_d.fromisoformat(venc) - _d.today()).days if venc else None
+                except Exception:
+                    dias_v = None
+                if float(t.get("strike") or 0) > 0:
+                    cot_ahora = cotizacion(t["ticker"], t["direccion"].upper(),
+                                           float(t["strike"]), max(1, dias_v or 7))
+                    if cot_ahora and abs(cot_ahora["strike"] - float(t["strike"])) / float(t["strike"]) > 0.02:
+                        cot_ahora = None
+                pe = float(t.get("prima_entrada") or 0)
+                valor_ahora = cot_ahora["premium"] if cot_ahora else None
+                if valor_ahora and pe:
+                    gan = (valor_ahora - pe) / pe * 100
+                    total = round((valor_ahora - pe) * 100 * t["contratos"])
+                    ico = "🟢" if gan >= 0 else "🔴"
+                    linea = (f"{ico} **Ahora vale ${valor_ahora}** (entrada ${pe}) · "
+                             f"**{gan:+.0f}%** · {total:+,} $")
+                    if gan >= 100:
+                        linea += "  — 🎉 **¡DOBLÓ! Vende la MITAD**"
+                    st.markdown(linea)
+                if venc:
+                    v_txt = f"Vence **{venc}**" + (f" · en **{dias_v} días**" if dias_v is not None else "")
+                    if dias_v is not None and dias_v <= 2:
+                        v_txt += " ⏳ **decide ya**"
+                    st.caption(v_txt)
+                else:
+                    st.caption("⚠️ Sin fecha de vencimiento — el Vigilante no podrá avisarte. Vuelve a registrarla con fecha.")
+
+                cc = st.columns([1.6, 1.2, 1, 0.7])
+                ps = cc[0].number_input("Prima de salida ($)", min_value=0.0, step=0.05,
+                                        value=float(valor_ahora or 0.0), key=f"ps_{t['id']}",
+                                        help="Se rellena sola con el precio actual del mercado.")
+                if cc[1].button("💰 Vender al precio actual", key=f"vender_{t['id']}",
+                                use_container_width=True, disabled=not valor_ahora):
+                    bitacora.cerrar(t["id"], float(valor_ahora))
+                    st.rerun()
+                if cc[2].button("✓ Cerrar", key=f"cerrar_{t['id']}", use_container_width=True):
                     bitacora.cerrar(t["id"], ps)
                     st.rerun()
-                if cc[2].button("🗑️", key=f"del_{t['id']}", use_container_width=True):
+                if cc[3].button("🗑️", key=f"del_{t['id']}", use_container_width=True):
                     bitacora.eliminar(t["id"])
                     st.rerun()
 

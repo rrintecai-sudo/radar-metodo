@@ -95,13 +95,17 @@ def cotizar_por_prima(ticker: str, tipo: str, precio: float, dias: int,
         if not len(otm):
             return None
 
-        # prima de cada contrato (último precio, o punto medio bid/ask)
+        # PRECIO REAL DE COMPRA = el ASK (lo que de verdad pagas al comprar).
+        # Si no hay ask, caemos al último precio negociado.
         def _prima(row):
+            a = float(row.get("ask") or 0)
+            if a > 0:
+                return a
+            b = float(row.get("bid") or 0)
             p = float(row.get("lastPrice") or 0)
-            b, a = float(row.get("bid") or 0), float(row.get("ask") or 0)
-            if p <= 0 and (b or a):
-                p = (b + a) / 2
-            return p
+            if b > 0 and p > 0:
+                return max(b, p)
+            return p or b
         otm["_prima"] = otm.apply(_prima, axis=1)
         otm = otm[otm["_prima"] > 0]
         if not len(otm):
@@ -129,9 +133,24 @@ def cotizar_por_prima(ticker: str, tipo: str, precio: float, dias: int,
         except Exception:
             pass
 
+        # transparencia total: bid, ask y spread reales del contrato elegido
+        bid = float(row.get("bid") or 0)
+        ask = float(row.get("ask") or 0)
+        ultimo = float(row.get("lastPrice") or 0)
+        spread = round(ask - bid, 2) if (bid and ask) else None
+        spread_pct = round((ask - bid) / ask * 100) if (bid and ask) else None
+        interes = int(row.get("openInterest") or 0)
+        volumen = int(row.get("volume") or 0)
+
         dias_real = (date.fromisoformat(exp) - date.today()).days
         return {"exp": exp, "dias": dias_real, "strike": strike,
-                "premium": round(premium, 2), "delta": round(delta, 2),
+                "premium": round(premium, 2),        # = lo que PAGAS (ask)
+                "bid": bid, "ask": ask, "ultimo": ultimo,
+                "spread": spread, "spread_pct": spread_pct,
+                "interes_abierto": interes, "volumen": volumen,
+                # ¿es un contrato líquido y confiable? (se negocia de verdad)
+                "liquido": bool(interes >= 50 and bid > 0 and ask > 0),
+                "delta": round(delta, 2),
                 "rango_prima": rango, "en_rango": bool(len(dentro))}
     except Exception:
         return None
