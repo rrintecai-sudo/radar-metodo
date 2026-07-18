@@ -38,8 +38,13 @@ def _nuevo_id(trades: list[dict]) -> int:
 
 
 def agregar(libro: str, ticker: str, direccion: str, estrategia: str, strike: float,
-            prima_entrada: float, contratos: int, nota: str = "") -> dict:
-    """Registra una nueva operación ABIERTA."""
+            prima_entrada: float, contratos: int, nota: str = "",
+            vencimiento: str = "") -> dict:
+    """
+    Registra una nueva operación ABIERTA.
+    `vencimiento` (YYYY-MM-DD) es clave: con él el Vigilante puede avisarte
+    cuándo se acerca el vencimiento y cuánto vale tu contrato ahora.
+    """
     trades = _cargar()
     t = {
         "id": _nuevo_id(trades),
@@ -51,6 +56,7 @@ def agregar(libro: str, ticker: str, direccion: str, estrategia: str, strike: fl
         "strike": float(strike),
         "prima_entrada": float(prima_entrada),
         "contratos": int(contratos),
+        "vencimiento": vencimiento,           # YYYY-MM-DD (para avisos de salida)
         "nota": nota,
         "estado": "abierta",
         "fecha_salida": None,

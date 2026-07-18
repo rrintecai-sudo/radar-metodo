@@ -885,14 +885,18 @@ def render_bitacora():
             direccion = col[1].selectbox("Dirección", ["call", "put"])
             estrategia = col[2].selectbox("Estrategia", list(ESTRATEGIAS.keys()),
                                           format_func=lambda e: ESTRATEGIAS[e]["nombre"])
-            col2 = st.columns(3)
+            col2 = st.columns(4)
             strike = col2[0].number_input("Strike", min_value=0.0, step=1.0)
             prima = col2[1].number_input("Prima pagada ($/acción)", min_value=0.0, step=0.05)
             contratos = col2[2].number_input("Contratos", min_value=1, value=1, step=1)
+            venc = col2[3].date_input("Vencimiento", value=None,
+                                      help="IMPORTANTE: con esta fecha el Vigilante te avisa "
+                                           "cuándo vence y cuándo vender. No la dejes vacía.")
             nota = st.text_input("Nota (por qué entraste)")
             if st.form_submit_button("Registrar"):
                 if ticker and prima > 0:
-                    bitacora.agregar(libro, ticker, direccion, estrategia, strike, prima, contratos, nota)
+                    bitacora.agregar(libro, ticker, direccion, estrategia, strike, prima,
+                                     contratos, nota, venc.isoformat() if venc else "")
                     st.rerun()
                 else:
                     st.error("Pon al menos el activo y la prima pagada.")

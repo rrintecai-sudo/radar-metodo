@@ -148,6 +148,98 @@ def escanear_y_avisar() -> int:
     return nuevas
 
 
+def revisar_salidas() -> int:
+    """
+    EL VIGILANTE DE SALIDAS — la otra mitad del trabajo.
+    Recorre tus posiciones ABIERTAS de la bitácora y te avisa cuándo VENDER:
+      1) 🎉 Dobló (+100%) -> vende la MITAD (recuperas todo tu capital)
+      2) 🚪 Señal de salida -> primera vela ROJA del día (si tienes CALL)
+                               o primera vela VERDE (si tienes PUT)
+      3) ⏳ Vence pronto (<= 2 días) -> decide, no la dejes derretir
+    Así no tienes que llevar los vencimientos en la cabeza.
+    """
+    from datetime import date
+    from engine import bitacora, method, data
+
+    ahora = datetime.now(premarket.ET)
+    hoy = ahora.date().isoformat()
+    estado = _cargar_estado()
+    if estado.get("fecha") != hoy:
+        estado = {"fecha": hoy, "avisadas": []}
+
+    abiertas = [t for lib in ("real", "simulacion") for t in bitacora.listar(lib, "abierta")]
+    avisos = 0
+    for t in abiertas:
+        tk, direc = t["ticker"], t["direccion"]
+        tipo = "CALL" if direc == "call" else "PUT"
+        strike = float(t.get("strike") or 0)
+        pe = float(t.get("prima_entrada") or 0)
+        # CANDADO: sin strike o sin prima no se puede cotizar -> no inventamos avisos
+        if strike <= 0 or pe <= 0:
+            continue
+        etiqueta = f"{tk} {tipo} {strike:g}"
+
+        # --- 1) ¿cuánto vale AHORA? ¿ya dobló? ---
+        try:
+            venc = t.get("vencimiento") or ""
+            dias = (date.fromisoformat(venc) - date.today()).days if venc else 7
+            cot = opcion_real.cotizar(tk, tipo, strike, max(1, dias))
+        except Exception:
+            cot, dias = None, None
+        # CANDADO: el contrato cotizado tiene que ser REALMENTE el suyo (mismo strike)
+        if cot and abs(cot["strike"] - strike) / strike > 0.02:
+            cot = None
+        if cot:
+            ganancia = (cot["premium"] - pe) / pe * 100 if pe else 0
+            if ganancia >= 100:
+                clave = f"salida_x2|{t['id']}|{hoy}"
+                if clave not in estado["avisadas"]:
+                    notify.enviar(
+                        f"🎉 ¡DOBLÓ! {etiqueta} — VENDE LA MITAD",
+                        f"Entrada ${pe} → ahora ${cot['premium']} (+{ganancia:.0f}%)\n"
+                        f"Vende la MITAD de tus {t['contratos']} contratos: recuperas TODO tu capital.\n"
+                        f"La otra mitad queda corriendo GRATIS.")
+                    estado["avisadas"].append(clave); avisos += 1
+                    print(f"[{ahora.strftime('%H:%M')}] 🎉 dobló: {etiqueta} (+{ganancia:.0f}%)")
+
+        # --- 2) ¿apareció la señal de SALIDA? (primera vela del día) ---
+        try:
+            df30 = method.preparar(data.obtener(tk, "30m"))
+            v = method._vela_apertura(df30)
+        except Exception:
+            v = None
+        if v is not None and ahora.hour >= 10:
+            roja = float(v["Close"]) < float(v["Open"])
+            salir = roja if direc == "call" else (not roja)
+            if salir:
+                clave = f"salida_senal|{t['id']}|{hoy}"
+                if clave not in estado["avisadas"]:
+                    q = "ROJA" if roja else "VERDE"
+                    notify.enviar(
+                        f"🚪 SEÑAL DE SALIDA — {etiqueta}",
+                        f"La primera vela del día abrió {q}: es la señal de Cardona para "
+                        f"cerrar lo que te quede de esta posición.\n"
+                        f"(Si ya vendiste la mitad al +100%, vende el resto.)")
+                    estado["avisadas"].append(clave); avisos += 1
+                    print(f"[{ahora.strftime('%H:%M')}] 🚪 señal de salida: {etiqueta}")
+
+        # --- 3) ¿se acerca el vencimiento? ---
+        if dias is not None and 0 <= dias <= 2:
+            clave = f"vence|{t['id']}|{hoy}"
+            if clave not in estado["avisadas"]:
+                cuando = "HOY" if dias == 0 else ("MAÑANA" if dias == 1 else f"en {dias} días")
+                notify.enviar(
+                    f"⏳ VENCE {cuando} — {etiqueta}",
+                    f"Tu contrato vence {cuando} ({t.get('vencimiento','')}).\n"
+                    f"Decide: vende lo que quede o déjalo expirar. "
+                    f"NO lo dejes derretir esperando que 'cobre solo' — el vencimiento no paga.")
+                estado["avisadas"].append(clave); avisos += 1
+                print(f"[{ahora.strftime('%H:%M')}] ⏳ vence {cuando}: {etiqueta}")
+
+    _guardar_estado(estado)
+    return avisos
+
+
 def main():
     cada = INTERVALO_DEF
     if "--cada" in sys.argv:
@@ -164,20 +256,31 @@ def main():
 
     if una_vez:
         n = escanear_y_avisar()
-        print(f"Escaneo único: {n} alerta(s) nueva(s).")
+        s = revisar_salidas()
+        print(f"Escaneo único: {n} alerta(s) de COMPRA, {s} de VENTA.")
         return
 
     while True:
         ahora = datetime.now(premarket.ET)
-        en_ventana = premarket.estado_sesion() == "abierto" and 10 <= ahora.hour < 16
-        if en_ventana:
+        abierto = premarket.estado_sesion() == "abierto"
+        # COMPRAS: solo en la ventana 10am-4pm (fuera de ahí es ruido)
+        if abierto and 10 <= ahora.hour < 16:
             try:
                 n = escanear_y_avisar()
-                print(f"[{ahora.strftime('%H:%M')}] escaneo ok; {n} alertas nuevas.")
+                print(f"[{ahora.strftime('%H:%M')}] compras: {n} alertas nuevas.")
             except Exception as e:
-                print(f"[vigilante] error en escaneo: {e}")
+                print(f"[vigilante] error en escaneo de compras: {e}")
         else:
-            print(f"[{ahora.strftime('%H:%M')}] fuera de la ventana de compra (10am–4pm ET); en pausa.")
+            print(f"[{ahora.strftime('%H:%M')}] fuera de la ventana de compra (10am–4pm ET).")
+        # VENTAS: se vigilan durante TODA la sesión (una salida puede aparecer
+        # a cualquier hora, y el aviso de vencimiento también).
+        if abierto:
+            try:
+                s = revisar_salidas()
+                if s:
+                    print(f"[{ahora.strftime('%H:%M')}] ventas: {s} avisos.")
+            except Exception as e:
+                print(f"[vigilante] error revisando salidas: {e}")
         time.sleep(cada * 60)
 
 
