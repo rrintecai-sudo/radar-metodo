@@ -380,6 +380,80 @@ def grafico(señal: dict):
     return viz.figura_detallada(df, señal, n_velas=n)
 
 
+def veredicto_compra(s: dict) -> dict:
+    """
+    ⚖️ EL VEREDICTO ÚNICO: ¿es esta una de las 2-4 BUENAS de la semana?
+    Junta todos los filtros en UNA respuesta, y explica el porqué.
+
+    OBLIGATORIAS (si falla una, se pasa):
+      1. Entrada CONFIRMADA (zona + ruptura del método)
+      2. Valor esperado >= 1.2 (tiene ventaja matemática)
+      3. Probabilidad de DOBLAR >= 50%
+      4. Muestra suficiente (>= 12 casos históricos)
+    DE CALIDAD (si fallan, baja a DUDOSA pero no la mata):
+      5. Dobla en <= 3 días   6. Señal fresca   7. Contrato líquido
+    """
+    ok, falla, ojo = [], [], []
+
+    # --- 1) confirmada ---
+    if s.get("estado") == "ENTRADA":
+        ok.append("Entrada confirmada (zona + ruptura)")
+    else:
+        falla.append("Aún no confirma la ruptura — todavía no es entrada")
+
+    # --- 2) ventaja matemática ---
+    ve = s.get("_ve")
+    if ve is None:
+        falla.append("Sin datos para calcular la ventaja (valor esperado)")
+    elif ve >= 1.2:
+        ok.append(f"Ventaja matemática buena (×{ve} por cada $1)")
+    else:
+        falla.append(f"Ventaja insuficiente (×{ve}; se pide ×1.2)")
+
+    # --- 3) probabilidad de doblar ---
+    p2, t2 = s.get("_p_x2"), s.get("_t_x2")
+    if p2 is None:
+        falla.append("Sin histórico para estimar la probabilidad de doblar")
+    elif p2 >= 50:
+        ok.append(f"Buena probabilidad de doblar ({p2:.0f}%)")
+    else:
+        falla.append(f"Probabilidad de doblar baja ({p2:.0f}%; se pide 50%)")
+
+    # --- 4) muestra ---
+    n = s.get("n_muestra", 0) or 0
+    if n >= 12:
+        ok.append(f"Muestra confiable ({n} casos históricos)")
+    else:
+        falla.append(f"Muestra muy chica ({n} casos) — el % no es de fiar")
+
+    # --- 5) velocidad ---
+    if t2 is not None:
+        if t2 <= 3:
+            ok.append(f"Rápida: dobla en ~{t2:.0f} día(s)")
+        else:
+            ojo.append(f"Lenta: tarda ~{t2:.0f} días en doblar")
+
+    # --- 6) liquidez del contrato ---
+    cot = s.get("_cot") or {}
+    if cot.get("liquido"):
+        ok.append("Contrato líquido (fácil de entrar y salir)")
+    elif cot.get("interes_abierto") is not None:
+        ojo.append("Contrato poco líquido — el spread te puede comer")
+
+    # --- veredicto ---
+    if falla:
+        nivel, titulo = "pasa", "⚪ PÁSALA — no es de las buenas"
+        resumen = "No cumple lo mínimo. Esperar es la jugada correcta."
+    elif ojo:
+        nivel, titulo = "dudosa", "🟡 DUDOSA — solo si no hay algo mejor"
+        resumen = "Cumple lo esencial, pero tiene peros. Si hay otra mejor hoy, prefiere esa."
+    else:
+        nivel, titulo = "tomala", "🟢 TÓMALA — es de las buenas de la semana"
+        resumen = "Cumple TODO. Esta es de las 2-4 que vale la pena tomar."
+    return {"nivel": nivel, "titulo": titulo, "resumen": resumen,
+            "ok": ok, "falla": falla, "ojo": ojo}
+
+
 def grafico_prob_tiempo(s: dict, cot: dict, h: dict, tp: str, key: str):
     """
     📊 EL MAPA DE DECISIÓN: probabilidad (eje Y) vs tiempo (eje X) para cada meta.
@@ -626,6 +700,24 @@ def tarjeta(s: dict):
             ico = "⚠️" if earn["nivel"] == "riesgo" else "📆"
             st.caption(f"{ico} **Earnings** · {earn['texto']}")
 
+        # --- ⚖️ EL VEREDICTO: ¿la tomo o la paso? (lo primero que debe leer) ---
+        vc = veredicto_compra(s)
+        c_ver = {"tomala": "#0F7A5A", "dudosa": "#B8860B", "pasa": "#8A8578"}[vc["nivel"]]
+        st.markdown(
+            f"<div style='background:{c_ver};color:white;border-radius:12px;padding:16px 20px;margin:8px 0'>"
+            f"<div style='font-size:1.45rem;font-weight:800'>{vc['titulo']}</div>"
+            f"<div style='opacity:.92;margin-top:3px'>{vc['resumen']}</div></div>",
+            unsafe_allow_html=True)
+        with st.expander("¿Por qué este veredicto?", expanded=(vc["nivel"] != "tomala")):
+            for r in vc["falla"]:
+                st.markdown(f"❌ {r}")
+            for r in vc["ojo"]:
+                st.markdown(f"⚠️ {r}")
+            for r in vc["ok"]:
+                st.markdown(f"✅ {r}")
+            st.caption("Para ser **de las buenas** tiene que cumplir las 4 obligatorias: entrada "
+                       "confirmada · ventaja ×1.2 · 50% de doblar · muestra de 12+ casos.")
+
         # --- LA ORDEN: exactamente qué contrato comprar (prominente) ---
         orden_de_compra(s)
 
@@ -780,12 +872,15 @@ def calificar(s: dict) -> dict:
 
 def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
     """Tarjeta corta y limpia: lo esencial de un vistazo."""
-    nivel, badge = accion_badge(s)
-    borde = {"comprar": "#0F7A5A", "cuidado": "#C0392B", "vigilar": "#B8860B"}[nivel]
+    # ⚖️ el VEREDICTO manda la tarjeta: ¿es de las buenas de la semana?
+    vc = veredicto_compra(s)
+    borde = {"tomala": "#0F7A5A", "dudosa": "#B8860B", "pasa": "#8A8578"}[vc["nivel"]]
+    badge = vc["titulo"]
     dir_txt = {"call": "🟢 CALL", "put": "🔴 PUT"}[s["direccion"]]
     with st.container(border=True):
-        st.markdown(f"<div style='background:{borde};color:white;padding:5px 8px;border-radius:6px;"
-                    f"font-weight:700;text-align:center'>{badge}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background:{borde};color:white;padding:6px 8px;border-radius:6px;"
+                    f"font-weight:700;text-align:center;font-size:.92rem'>{badge}</div>",
+                    unsafe_allow_html=True)
         ritmo = ESTRATEGIAS[s["estrategia"]].get("ritmo", "")
         st.markdown(f"### {s['ticker']} · {dir_txt}")
         st.caption(f"{s['estrategia_nombre']} · {ritmo}")
