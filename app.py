@@ -682,6 +682,52 @@ def _fecha_es(iso: str) -> str:
         return iso
 
 
+def frase_de_decision(s: dict, cot: dict, costo1: int):
+    """
+    🧠 LA FRASE DE DECISIÓN — la idea de Oscar hecha realidad.
+    Todo en una línea, en primer plano: inviertes $X por contrato · tienes P% de
+    hacer ×N en D días · te recomiendo K contratos. La decisión, servida.
+    """
+    tp = cot.get("tipo") or s["opcion"]["tipo"]
+    h = historial(s["ticker"], s["estrategia"])
+    if h.get("sin_datos"):
+        st.info(f"💵 Inviertes **${costo1}** por contrato. Sin histórico suficiente para "
+                "estimar probabilidad y tiempo — decide con cuidado.")
+        return
+
+    # la meta más informativa: el DOBLAR (×2). Si es muy probable y rápido, mejor.
+    p2 = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 2, tp)
+    t2 = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 2, tp)
+    p3 = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 3, tp)
+
+    # cuántos contratos recomiendo (10% de la cuenta)
+    cuenta = int(st.session_state.get("cuenta_usd", 1000))
+    riesgo = round(cuenta * RIESGO_MAX_CAPITAL_PCT / 100)
+    n_rec = max(1, int(riesgo // costo1)) if costo1 else 1
+    inv_total = n_rec * costo1
+
+    t_txt = "el mismo día" if (t2 is not None and t2 < 1) else \
+            (f"~{t2:.0f} día" + ("s" if (t2 or 0) >= 2 else "")) if t2 is not None else "tiempo incierto"
+    p_col = "#0F7A5A" if (p2 or 0) >= 60 else ("#B8860B" if (p2 or 0) >= 45 else "#C0392B")
+
+    st.markdown(
+        f"<div style='background:{p_col}12;border:1.5px solid {p_col};border-radius:12px;"
+        f"padding:15px 18px;margin:6px 0;line-height:1.6'>"
+        f"<div style='font-size:.72rem;letter-spacing:.1em;color:{p_col};font-weight:700'>TU DECISIÓN, EN UNA LÍNEA</div>"
+        f"<div style='font-size:1.16rem;color:var(--text-color,inherit);margin-top:4px'>"
+        f"Inviertes <b>${costo1}</b> por contrato · "
+        f"tienes <b style='color:{p_col}'>{p2:.0f}%</b> de <b>doblar (×2)</b> en <b>{t_txt}</b> · "
+        f"te recomiendo <b>{n_rec} contrato{'s' if n_rec>1 else ''}</b> "
+        f"(inviertes <b>${inv_total}</b>)."
+        f"</div></div>", unsafe_allow_html=True)
+
+    # la traducción a plata concreta
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Si dobla (×2)", f"+${inv_total}", help="Ganancia neta si llega al ×2 (además recuperas tu inversión).")
+    c2.metric("Prob. de ×3", f"{p3:.0f}%", help="Y de ahí en adelante, con la escalera, puede seguir.")
+    c3.metric("Arriesgas (topado)", f"${inv_total}", help="Lo máximo que puedes perder. Ni un centavo más.")
+
+
 def orden_de_compra(s: dict):
     """
     La ORDEN clara: exactamente QUÉ contrato comprar. Separa lo CONFIABLE (el
@@ -709,6 +755,9 @@ def orden_de_compra(s: dict):
         venc = _fecha_es(cot["exp"])
         st.markdown(f"## {tipo} · {s['ticker']} · strike {cot['strike']}")
         st.markdown(f"**Vence {venc}** · en {cot['dias']} días")
+
+        # ═══ 🧠 LA FRASE DE DECISIÓN — todo en una línea, en primer plano ═══
+        frase_de_decision(s, cot, costo1)
 
         # ⏱️ FRESCURA: ¿cuánto tiempo llevas para actuar sobre esta señal?
         try:
