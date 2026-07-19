@@ -195,31 +195,30 @@ def escalera_de_venta(prima: float, contratos: int, h: dict, s: dict, tp: str, c
     corre = resto - n3 - n5
 
     filas = []
-    acum = 0
     for mult, n, etiqueta in [(2, n2, "Recuperas TODO tu capital"),
                               (3, n3, "Ganancia asegurada"),
                               (5, n5, "Más ganancia")]:
         if n <= 0:
             continue
-        entra = round(prima * mult * 100 * n)
-        acum += entra
-        p = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], mult, tp) if not h.get("sin_datos") else None
-        filas.append({"Escalón": f"×{mult}", "Vendes": f"{n} contrato(s)",
-                      "Recibes": f"${entra:,}", "Acumulado": f"${acum:,}",
-                      "Prob.": f"{p:.0f}%" if p else "—", "Qué logras": etiqueta})
-    if corre > 0:
-        p10 = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 10, tp) if not h.get("sin_datos") else None
-        filas.append({"Escalón": "×10+", "Vendes": f"{corre} corriendo",
-                      "Recibes": f"${round(prima*10*100*corre):,}", "Acumulado": "—",
-                      "Prob.": f"{p10:.0f}%" if p10 else "—",
-                      "Qué logras": "🚀 AQUÍ están los ×10 — por sostener"})
-    if not filas:
+        precio_lim = prima * mult                      # el PRECIO al que se vende sola
+        entra = round(precio_lim * 100 * n)
+        filas.append({"Orden límite (vender a)": f"${precio_lim:.2f}", "Cuántos": f"{n} contrato(s)",
+                      "Recibes": f"${entra:,}", "= múltiplo": f"×{mult}", "Logras": etiqueta})
+    if not filas and corre == 0:
         return
-    st.markdown("**🪜 Tu escalera de venta** — así es como se llega a los ×10")
-    st.dataframe(pd.DataFrame(filas), hide_index=True, use_container_width=True)
-    st.caption(f"Invertiste **${costo_total:,}**. Al ×2 ya lo recuperaste todo: de ahí en adelante "
-               f"**juegas con dinero de la casa**. Por eso puedes dejar correr los últimos "
-               f"contratos sin miedo — es exactamente lo que hace Alejandro para llegar a ×10-×20.")
+    st.markdown("**🪜 Coloca estas órdenes límite AL COMPRAR — se venden solas**")
+    if filas:
+        st.dataframe(pd.DataFrame(filas), hide_index=True, use_container_width=True)
+    if corre > 0:
+        st.markdown(f"🚀 **Deja {corre} contrato(s) SIN orden** — corriendo hacia el ×10-×20. "
+                    "A ese te avisa el Vigilante cuándo salir (o lo dejas hasta el vencimiento).")
+    st.info(
+        "**Así NO tienes que estar mirando el P/L.** Al comprar en tu bróker, dejas estas "
+        "órdenes de venta puestas (Sell to Close · Limit · el precio de la tabla). "
+        "Se ejecutan **solas** cuando el precio las toca. Tú te olvidas.")
+    st.caption(f"Invertiste **${costo_total:,}**. La primera orden (×2) te devuelve tu capital: "
+               "de ahí en adelante **juegas con dinero de la casa**. Por eso el último contrato "
+               "corre sin miedo — es como Alejandro llega a ×10-×20, **con las órdenes puestas, no mirando.**")
     # honestidad sobre la granularidad: cuántos contratos hacen falta para escalar
     if contratos <= 1:
         st.warning("⚠️ Con **1 contrato** no hay escalera: es **todo o nada**. Para poder ir "
