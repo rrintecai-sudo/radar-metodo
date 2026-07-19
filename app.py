@@ -726,8 +726,7 @@ def frase_de_decision(s: dict, cot: dict, costo1: int):
         f"<div style='font-size:1.16rem;color:var(--text-color,inherit);margin-top:4px'>"
         f"Inviertes <b>${costo1}</b> por contrato · "
         f"tienes <b style='color:{p_col}'>{p2:.0f}%</b> de <b>doblar (×2)</b> en <b>{t_txt}</b> · "
-        f"te recomiendo <b>{n_rec} contrato{'s' if n_rec>1 else ''}</b> "
-        f"(inviertes <b>${inv_total}</b>)."
+        f"el sistema te dirá abajo <b>cuántos comprar</b> ({n_rec} con tu cuenta actual)."
         f"</div></div>", unsafe_allow_html=True)
 
     # la traducción a plata concreta
@@ -812,34 +811,44 @@ def orden_de_compra(s: dict):
         b.info("**💵 Precio REAL de compra:**\n\n" + detalle +
                "\nEste es el **ask del mercado** — lo que pagas al comprar ahora. "
                "Puede moverse unos centavos; confírmalo al ejecutar.")
-        # cuántos contratos, según tu riesgo (10% de la cuenta)
-        cuenta = st.number_input(
-            "Tu cuenta ($) — para calcular cuántos contratos comprar",
-            min_value=100, value=int(st.session_state.get("cuenta_usd", 1000)), step=100,
-            key=f"cta_{s['ticker']}_{s['estrategia']}")
-        st.session_state["cuenta_usd"] = cuenta
+        # ═══ 🎯 LA DECISIÓN DEL SISTEMA: cuántos comprar (regla del 10%, no tú) ═══
+        cuenta = int(st.session_state.get("cuenta_usd", 1000))
         riesgo = round(cuenta * RIESGO_MAX_CAPITAL_PCT / 100)
         n_cont = max(1, int(riesgo // costo1)) if costo1 else 1
-        st.info(
-            f"🛡️ Arriesga máximo el **{RIESGO_MAX_CAPITAL_PCT}%** de tu cuenta = **${riesgo}**. "
-            f"A ${costo1} por contrato → **compra {n_cont} contrato(s)** (arriesgas ${n_cont * costo1}).")
+        inv = n_cont * costo1
+        st.markdown(
+            f"<div style='background:#0F7A5A;color:white;border-radius:12px;padding:16px 20px;margin:6px 0'>"
+            f"<div style='font-size:.72rem;letter-spacing:.1em;opacity:.85;font-weight:700'>EL SISTEMA DECIDE</div>"
+            f"<div style='font-size:1.5rem;font-weight:800;margin-top:2px'>COMPRA {n_cont} CONTRATO{'S' if n_cont>1 else ''}</div>"
+            f"<div style='opacity:.92;margin-top:2px'>Inviertes ${inv} · arriesgas ${inv} (topado) · "
+            f"= el {RIESGO_MAX_CAPITAL_PCT}% de tu cuenta de ${cuenta:,}</div></div>",
+            unsafe_allow_html=True)
+        st.caption(f"No lo decides tú: **la regla del {RIESGO_MAX_CAPITAL_PCT}% lo calcula.** "
+                   f"${riesgo} de riesgo ÷ ${costo1} por contrato = {n_cont}. "
+                   "Cambia tu capital abajo si tu cuenta no es $1,000.")
 
-        # --- UN CLIC: registrar la compra en la bitácora, sin teclear nada ---
-        bc = st.columns([1, 1, 2])
-        n_final = bc[0].number_input("Contratos", min_value=1, value=int(n_cont), step=1,
-                                     key=f"nc_{s['ticker']}_{s['estrategia']}")
+        # capital (una vez, discreto) — solo para recalcular la cantidad
+        with st.expander("⚙️ Mi capital no es $1,000 / registrar manual"):
+            nueva = st.number_input("Mi cuenta ($)", min_value=100, value=cuenta, step=100,
+                                    key=f"cta_{s['ticker']}_{s['estrategia']}")
+            if nueva != cuenta:
+                st.session_state["cuenta_usd"] = nueva
+                st.rerun()
+
+        # --- UN CLIC: comprar esa cantidad exacta y registrar ---
+        bc = st.columns([1.4, 1])
         libro_r = bc[1].selectbox("Libro", ["simulacion", "real"],
                                   key=f"lb_{s['ticker']}_{s['estrategia']}")
-        if bc[2].button("📔 Ya la compré — registrar en bitácora",
+        if bc[0].button(f"📔 Compré {n_cont} — registrar en bitácora",
                         key=f"reg_{s['ticker']}_{s['estrategia']}", use_container_width=True):
             bitacora.agregar(libro_r, s["ticker"], s["direccion"], s["estrategia"],
-                             cot["strike"], prima, int(n_final),
+                             cot["strike"], prima, int(n_cont),
                              nota=f"{s['estrategia_nombre']} · registrada desde la orden",
                              vencimiento=cot["exp"])
-            st.success(f"✅ Registrada: {tipo} {s['ticker']} {cot['strike']} × {n_final} "
+            st.success(f"✅ Registrada: {tipo} {s['ticker']} {cot['strike']} × {n_cont} "
                        f"a ${prima} · vence {cot['exp']}. El Vigilante ya te avisará cuándo vender.")
-        st.caption("Al registrarla, el Vigilante empieza a vigilar su venta: te avisa si dobla, "
-                   "si aparece la señal de salida o si se acerca el vencimiento.")
+        # guardamos la cantidad para que la escalera use el mismo número
+        st.session_state[f"nc_{s['ticker']}_{s['estrategia']}"] = n_cont
 
 
 def tarjeta(s: dict):
