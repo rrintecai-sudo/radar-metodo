@@ -483,11 +483,24 @@ def veredicto_compra(s: dict) -> dict:
     except Exception:
         pass
 
+    # --- ¿es EXCEPCIONAL? (lo bastante buena para justificar romper el cupo) ---
+    excepcional = (ve is not None and ve >= 1.6 and p2 is not None and p2 >= 65
+                   and n >= 20 and t2 is not None and t2 <= 3)
+
     # --- veredicto ---
+    # El cupo AVISA, no bloquea: la decisión final es de Oscar. Pero le decimos
+    # con claridad si la señal es lo bastante buena para justificar la excepción.
     if frena_cartera and not falla:
-        return {"nivel": "espera", "titulo": "🟠 BUENA, pero HOY NO te toca",
-                "resumen": "La señal cumple, pero tu cartera dice que no. Guarda el turno.",
-                "ok": ok, "falla": frena_cartera, "ojo": ojo}
+        if excepcional:
+            return {"nivel": "tomala", "titulo": "🟢 TÓMALA — vale la excepción",
+                    "resumen": ("Estás sobre tu cupo, PERO esta señal es excepcional "
+                                "(ventaja alta, muy probable, rápida y con muestra grande). "
+                                "Si vas a romper el cupo alguna vez, es por una así."),
+                    "ok": ok, "falla": [], "ojo": ojo + frena_cartera}
+        return {"nivel": "espera", "titulo": "🟠 BUENA — pero vas sobre tu cupo",
+                "resumen": ("La señal cumple, pero no es excepcional y ya vas sobre el ritmo del "
+                            "método. **Tú decides**: lo prudente es guardar el turno."),
+                "ok": ok, "falla": [], "ojo": ojo + frena_cartera}
     if falla:
         nivel, titulo = "pasa", "⚪ PÁSALA — no es de las buenas"
         resumen = "No cumple lo mínimo. Esperar es la jugada correcta."
@@ -1405,11 +1418,13 @@ if dashboard:
                   help="El método pide 2-4 por semana. Forzar más es el error clásico.")
         q3.metric("Capital desplegado", f"${c['desplegado']:,}",
                   help="Lo que tienes metido en opciones abiertas ahora mismo.")
-        if libre_sem == 0:
-            st.warning("🛑 **Ya cumpliste tu cupo semanal (4).** Lo correcto ahora es "
-                       "**esperar a la próxima semana**, aunque veas señales buenas.")
-        elif libre_pos == 0:
-            st.warning("🛑 **Ya tienes 4 posiciones abiertas.** Espera a cerrar alguna antes de abrir otra.")
+        if libre_sem == 0 or libre_pos == 0:
+            motivo = ("ya cumpliste tu cupo semanal (4)" if libre_sem == 0
+                      else "ya tienes 4 posiciones abiertas")
+            st.info(f"🧭 **Vas sobre el ritmo del método** — {motivo}. "
+                    "De aquí en adelante el tool te marcará las señales como **excepción**: "
+                    "solo te dirá TÓMALA si es **excepcional** (ventaja alta, muy probable, "
+                    "rápida y con muestra grande). **La decisión final es tuya.**")
         else:
             st.caption(f"🧭 Te quedan **{libre_sem} operación(es)** de tu cupo semanal y "
                        f"**{libre_pos} espacio(s)** de posiciones abiertas.")
