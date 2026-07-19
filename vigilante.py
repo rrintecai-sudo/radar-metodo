@@ -96,6 +96,13 @@ def escanear_y_avisar() -> int:
     if estado.get("fecha") != hoy:
         estado = {"fecha": hoy, "avisadas": []}  # nuevo día, borrón y cuenta nueva
 
+    # El MERCADO tiene que estar ABIERTO de verdad (no basta con la hora:
+    # un domingo a las 3pm la hora "cuadra" pero no hay mercado).
+    if premarket.estado_sesion() != "abierto":
+        print(f"[{ahora.strftime('%H:%M')}] mercado cerrado; sin alertas.")
+        _guardar_estado(estado)
+        return 0
+
     # SOLO avisar en la VENTANA DE COMPRA (10am–4pm ET). Empieza a las 10 porque
     # la 'primera vela roja de apertura' (PUT) se compra a las 10:00 en punto;
     # los calls siguen siendo desde las 11. Fuera de esa franja, avisar es ruido.
@@ -162,6 +169,10 @@ def revisar_salidas() -> int:
     from engine import bitacora, method, data
 
     ahora = datetime.now(premarket.ET)
+    # las ventas también se vigilan solo con el mercado abierto (los precios
+    # de fin de semana están congelados: avisar sería ruido).
+    if premarket.estado_sesion() != "abierto":
+        return 0
     hoy = ahora.date().isoformat()
     estado = _cargar_estado()
     if estado.get("fecha") != hoy:
