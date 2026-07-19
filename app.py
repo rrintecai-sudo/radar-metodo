@@ -500,6 +500,47 @@ def grafico(señal: dict):
     return viz.figura_detallada(df, señal, n_velas=n)
 
 
+# Bloques de correlación: activos que en la práctica se mueven JUNTOS.
+# OJO: SPY y QQQ CONTIENEN a las mega-caps de tecnología (son sus mayores pesos),
+# así que SPY/QQQ + una mega-cap = doble apuesta a lo mismo, no diversificación.
+_TECH_GRANDE = {"QQQ", "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "AVGO", "TSLA",
+                "AMD", "NFLX", "QCOM", "MU", "MRVL", "INTC", "SMCI", "ADBE", "CRM",
+                "NOW", "PLTR", "CRWD", "ARM", "TSM", "SNOW", "SHOP"}
+_GRUPOS_CORR = {
+    "tecnología grande": _TECH_GRANDE,
+    "cripto": {"COIN", "MSTR", "MARA"},
+    "energía / petróleo": {"XOM", "CVX", "USO"},
+    "metales": {"GLD", "SLV"},
+    "especulativas": {"GME", "SOFI", "RIVN"},
+}
+
+
+def _grupo_corr(tk: str):
+    tk = tk.upper()
+    for nombre, conj in _GRUPOS_CORR.items():
+        if tk in conj:
+            return nombre
+    return None
+
+
+def choque_correlacion(ticker: str, abiertos: list[str]) -> list[str]:
+    """¿Esta señal REPITE una apuesta que ya tienes abierta? (correlación real)."""
+    tk = ticker.upper()
+    ab = {a.upper() for a in abiertos if a.upper() != tk}
+    avisos = []
+    g = _grupo_corr(tk)
+    if g:
+        mismos = sorted(a for a in ab if _grupo_corr(a) == g)
+        if mismos:
+            avisos.append(f"Ya tienes {', '.join(mismos)} en «{g}» — es la misma apuesta, no diversificas")
+    # el SPY es el mercado entero: solapa con casi todo lo grande
+    if tk == "SPY" and (_TECH_GRANDE & ab):
+        avisos.append("El SPY contiene a las tech que ya tienes abiertas — estás doblando lo mismo")
+    elif tk in _TECH_GRANDE and "SPY" in ab:
+        avisos.append(f"Ya tienes SPY, que CONTIENE a {tk} — estarías doblando la exposición")
+    return avisos
+
+
 @st.cache_data(ttl=60, show_spinner=False)
 def estado_cartera() -> dict:
     """
@@ -581,16 +622,18 @@ def veredicto_compra(s: dict) -> dict:
     elif cot.get("interes_abierto") is not None:
         ojo.append("Contrato poco líquido — el spread te puede comer")
 
-    # --- 7) EARNINGS dentro de la vida de la opción (riesgo de empresa única) ---
+    # --- 7) EARNINGS dentro de la vida de la opción -> BLOQUEA (endurecido) ---
+    # Es el único riesgo real de operar acciones y no del SPY: un reporte mueve
+    # la acción de forma impredecible. Si cae dentro de la vida de la opción, se pasa.
     try:
         es_accion = UNIVERSO.get(s["ticker"], {}).get("clase") == "accion"
         earn = earnings_ctx(s["ticker"], s["opcion"]["dias_vencimiento"], es_accion)
         if earn.get("nivel") == "riesgo":
-            ojo.append("Reporte de resultados dentro de la vida de la opción (impredecible)")
+            falla.append("Reporte de resultados dentro de la vida de la opción — riesgo impredecible, pásala")
     except Exception:
         pass
 
-    # --- 8) TU SITUACIÓN: aunque la señal sea buena, ¿te toca tomarla? ---
+    # --- 8) TU SITUACIÓN + CORRELACIÓN: ¿te toca, y no repites la misma apuesta? ---
     frena_cartera = []
     try:
         c = estado_cartera()
@@ -600,6 +643,8 @@ def veredicto_compra(s: dict) -> dict:
             frena_cartera.append(f"Ya abriste {c['esta_semana']} esta semana — el método pide 2-4, no más")
         if s["ticker"] in c["tickers"]:
             frena_cartera.append(f"Ya tienes una posición abierta en {s['ticker']} — no concentres")
+        # correlación: SPY/QQQ contienen a las mega-caps; varias tech = la misma apuesta
+        frena_cartera += choque_correlacion(s["ticker"], c["tickers"])
     except Exception:
         pass
 
