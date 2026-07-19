@@ -220,6 +220,15 @@ def escalera_de_venta(prima: float, contratos: int, h: dict, s: dict, tp: str, c
     st.caption(f"Invertiste **${costo_total:,}**. Al ×2 ya lo recuperaste todo: de ahí en adelante "
                f"**juegas con dinero de la casa**. Por eso puedes dejar correr los últimos "
                f"contratos sin miedo — es exactamente lo que hace Alejandro para llegar a ×10-×20.")
+    # honestidad sobre la granularidad: cuántos contratos hacen falta para escalar
+    if contratos <= 1:
+        st.warning("⚠️ Con **1 contrato** no hay escalera: es **todo o nada**. Para poder ir "
+                   "asegurando ganancia y aun así cazar el ×10, necesitas **al menos 2-3 contratos** "
+                   "(por eso los contratos baratos, como SPY/QQQ, te convienen para esto).")
+    elif contratos < 4:
+        st.caption(f"💡 Con **{contratos} contratos** haces una escalera básica (recuperas + dejas correr). "
+                   "Para una escalera fina (vender también en ×3 y ×5) te vienen bien **4+ contratos**, "
+                   "que consigues con primas baratas.")
 
 
 def jugada_x10(s: dict, h: dict, tp: str):
