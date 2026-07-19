@@ -380,6 +380,27 @@ def grafico(señal: dict):
     return viz.figura_detallada(df, señal, n_velas=n)
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def estado_cartera() -> dict:
+    """
+    Tu situación AHORA: cuántas posiciones tienes abiertas, cuántas operaciones
+    abriste esta semana y en qué activos. El veredicto lo necesita: una señal
+    puede ser perfecta y aun así no debes tomarla si ya tienes el cupo lleno.
+    """
+    from datetime import date, timedelta
+    abiertas = [t for lib in ("real", "simulacion") for t in bitacora.listar(lib, "abierta")]
+    hoy = date.today()
+    lunes = (hoy - timedelta(days=hoy.weekday())).isoformat()
+    todas = [t for lib in ("real", "simulacion") for t in bitacora.listar(lib)]
+    semana = [t for t in todas if (t.get("fecha_entrada") or "")[:10] >= lunes]
+    desplegado = sum(float(t.get("prima_entrada") or 0) * 100 * int(t.get("contratos") or 0)
+                     for t in abiertas)
+    return {"abiertas": len(abiertas),
+            "tickers": sorted({t["ticker"] for t in abiertas}),
+            "esta_semana": len(semana),
+            "desplegado": round(desplegado)}
+
+
 def veredicto_compra(s: dict) -> dict:
     """
     ⚖️ EL VEREDICTO ÚNICO: ¿es esta una de las 2-4 BUENAS de la semana?
@@ -440,7 +461,33 @@ def veredicto_compra(s: dict) -> dict:
     elif cot.get("interes_abierto") is not None:
         ojo.append("Contrato poco líquido — el spread te puede comer")
 
+    # --- 7) EARNINGS dentro de la vida de la opción (riesgo de empresa única) ---
+    try:
+        es_accion = UNIVERSO.get(s["ticker"], {}).get("clase") == "accion"
+        earn = earnings_ctx(s["ticker"], s["opcion"]["dias_vencimiento"], es_accion)
+        if earn.get("nivel") == "riesgo":
+            ojo.append("Reporte de resultados dentro de la vida de la opción (impredecible)")
+    except Exception:
+        pass
+
+    # --- 8) TU SITUACIÓN: aunque la señal sea buena, ¿te toca tomarla? ---
+    frena_cartera = []
+    try:
+        c = estado_cartera()
+        if c["abiertas"] >= 4:
+            frena_cartera.append(f"Ya tienes {c['abiertas']} posiciones abiertas — guarda pólvora seca")
+        if c["esta_semana"] >= 4:
+            frena_cartera.append(f"Ya abriste {c['esta_semana']} esta semana — el método pide 2-4, no más")
+        if s["ticker"] in c["tickers"]:
+            frena_cartera.append(f"Ya tienes una posición abierta en {s['ticker']} — no concentres")
+    except Exception:
+        pass
+
     # --- veredicto ---
+    if frena_cartera and not falla:
+        return {"nivel": "espera", "titulo": "🟠 BUENA, pero HOY NO te toca",
+                "resumen": "La señal cumple, pero tu cartera dice que no. Guarda el turno.",
+                "ok": ok, "falla": frena_cartera, "ojo": ojo}
     if falla:
         nivel, titulo = "pasa", "⚪ PÁSALA — no es de las buenas"
         resumen = "No cumple lo mínimo. Esperar es la jugada correcta."
@@ -702,7 +749,7 @@ def tarjeta(s: dict):
 
         # --- ⚖️ EL VEREDICTO: ¿la tomo o la paso? (lo primero que debe leer) ---
         vc = veredicto_compra(s)
-        c_ver = {"tomala": "#0F7A5A", "dudosa": "#B8860B", "pasa": "#8A8578"}[vc["nivel"]]
+        c_ver = {"tomala": "#0F7A5A", "dudosa": "#B8860B", "espera": "#C2703D", "pasa": "#8A8578"}[vc["nivel"]]
         st.markdown(
             f"<div style='background:{c_ver};color:white;border-radius:12px;padding:16px 20px;margin:8px 0'>"
             f"<div style='font-size:1.45rem;font-weight:800'>{vc['titulo']}</div>"
@@ -874,7 +921,7 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
     """Tarjeta corta y limpia: lo esencial de un vistazo."""
     # ⚖️ el VEREDICTO manda la tarjeta: ¿es de las buenas de la semana?
     vc = veredicto_compra(s)
-    borde = {"tomala": "#0F7A5A", "dudosa": "#B8860B", "pasa": "#8A8578"}[vc["nivel"]]
+    borde = {"tomala": "#0F7A5A", "dudosa": "#B8860B", "espera": "#C2703D", "pasa": "#8A8578"}[vc["nivel"]]
     badge = vc["titulo"]
     dir_txt = {"call": "🟢 CALL", "put": "🔴 PUT"}[s["direccion"]]
     with st.container(border=True):
@@ -1345,6 +1392,29 @@ if dashboard:
                    "Las señales intradía cambian durante el día; actúa cuando estén frescas.")
 
     panel_calendario()
+
+    # --- 🧭 TU SITUACIÓN: cuánto cupo te queda esta semana ---
+    try:
+        c = estado_cartera()
+        libre_sem = max(0, 4 - c["esta_semana"])
+        libre_pos = max(0, 4 - c["abiertas"])
+        q1, q2, q3 = st.columns(3)
+        q1.metric("Abiertas ahora", f"{c['abiertas']}",
+                  help="Máximo recomendado: 4 a la vez. Deja pólvora seca.")
+        q2.metric("Operaciones esta semana", f"{c['esta_semana']} de 4",
+                  help="El método pide 2-4 por semana. Forzar más es el error clásico.")
+        q3.metric("Capital desplegado", f"${c['desplegado']:,}",
+                  help="Lo que tienes metido en opciones abiertas ahora mismo.")
+        if libre_sem == 0:
+            st.warning("🛑 **Ya cumpliste tu cupo semanal (4).** Lo correcto ahora es "
+                       "**esperar a la próxima semana**, aunque veas señales buenas.")
+        elif libre_pos == 0:
+            st.warning("🛑 **Ya tienes 4 posiciones abiertas.** Espera a cerrar alguna antes de abrir otra.")
+        else:
+            st.caption(f"🧭 Te quedan **{libre_sem} operación(es)** de tu cupo semanal y "
+                       f"**{libre_pos} espacio(s)** de posiciones abiertas.")
+    except Exception:
+        pass
 
     # --- filtros (sin "mínimo de condiciones": el ranking lo hace solo) ---
     with st.container(border=True):
