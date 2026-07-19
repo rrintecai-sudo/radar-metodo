@@ -812,7 +812,19 @@ def orden_de_compra(s: dict):
                "\nEste es el **ask del mercado** — lo que pagas al comprar ahora. "
                "Puede moverse unos centavos; confírmalo al ejecutar.")
         # ═══ 🎯 LA DECISIÓN DEL SISTEMA: cuántos comprar (regla del 10%, no tú) ═══
-        cuenta = int(st.session_state.get("cuenta_usd", 1000))
+        # Tu capital, editable AQUÍ mismo y GLOBAL (queda igual en todas las fichas).
+        cc = st.columns([1, 1])
+        cuenta = cc[0].number_input(
+            "💼 Mi capital disponible ($)", min_value=100,
+            value=int(st.session_state.get("cuenta_usd", 1000)), step=100,
+            key=f"cta_{s['ticker']}_{s['estrategia']}",
+            help="Cámbialo cuando quieras. Se aplica a TODAS las fichas y recalcula la cantidad al instante.")
+        if cuenta != st.session_state.get("cuenta_usd"):
+            st.session_state["cuenta_usd"] = cuenta      # global para todas las fichas
+        cc[1].metric("Riesgo por operación",
+                     f"${round(cuenta * RIESGO_MAX_CAPITAL_PCT / 100)}",
+                     help=f"El {RIESGO_MAX_CAPITAL_PCT}% de tu capital — lo máximo que arriesgas en esta.")
+
         riesgo = round(cuenta * RIESGO_MAX_CAPITAL_PCT / 100)
         n_cont = max(1, int(riesgo // costo1)) if costo1 else 1
         inv = n_cont * costo1
@@ -824,16 +836,7 @@ def orden_de_compra(s: dict):
             f"= el {RIESGO_MAX_CAPITAL_PCT}% de tu cuenta de ${cuenta:,}</div></div>",
             unsafe_allow_html=True)
         st.caption(f"No lo decides tú: **la regla del {RIESGO_MAX_CAPITAL_PCT}% lo calcula.** "
-                   f"${riesgo} de riesgo ÷ ${costo1} por contrato = {n_cont}. "
-                   "Cambia tu capital abajo si tu cuenta no es $1,000.")
-
-        # capital (una vez, discreto) — solo para recalcular la cantidad
-        with st.expander("⚙️ Mi capital no es $1,000 / registrar manual"):
-            nueva = st.number_input("Mi cuenta ($)", min_value=100, value=cuenta, step=100,
-                                    key=f"cta_{s['ticker']}_{s['estrategia']}")
-            if nueva != cuenta:
-                st.session_state["cuenta_usd"] = nueva
-                st.rerun()
+                   f"${riesgo} de riesgo ÷ ${costo1} por contrato = {n_cont}.")
 
         # --- UN CLIC: comprar esa cantidad exacta y registrar ---
         bc = st.columns([1.4, 1])
@@ -1584,6 +1587,18 @@ if dashboard:
                    "Las señales intradía cambian durante el día; actúa cuando estén frescas.")
 
     panel_calendario()
+
+    # --- 💼 TU CAPITAL (global): fija tu cuenta una vez para toda la sesión ---
+    cap_cols = st.columns([1, 3])
+    cap = cap_cols[0].number_input(
+        "💼 Mi capital ($)", min_value=100,
+        value=int(st.session_state.get("cuenta_usd", 1000)), step=100,
+        help="Se usa en TODAS las fichas para calcular cuántos contratos comprar. "
+             "También puedes cambiarlo dentro de cada oportunidad.")
+    st.session_state["cuenta_usd"] = cap
+    cap_cols[1].caption(f"El sistema arriesgará el **{RIESGO_MAX_CAPITAL_PCT}%** = "
+                        f"**${round(cap*RIESGO_MAX_CAPITAL_PCT/100)}** por operación. "
+                        "Cambia tu capital cuando crezca y todo se recalcula solo.")
 
     # --- 🧭 TU SITUACIÓN: cuánto cupo te queda esta semana ---
     try:
