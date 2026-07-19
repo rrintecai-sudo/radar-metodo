@@ -180,6 +180,48 @@ def cotizacion_agresiva(ticker: str, tipo: str, precio: float) -> dict | None:
     return opcion_real.cotizar(ticker, tipo, strike, VENCIMIENTO_DIAS_AGRESIVO)
 
 
+def escalera_de_venta(prima: float, contratos: int, h: dict, s: dict, tp: str, cot: dict):
+    """
+    🪜 LA ESCALERA DE VENTA — así es como Cardona llega a ×10-×20.
+    No se vende todo al doblar: se va vendiendo por partes y se DEJA CORRER
+    un pedazo. "15, 20 veces la inversión, solamente por sostener."
+    """
+    costo_total = round(prima * 100 * contratos)
+    # reparto: mitad al ×2 (recupera capital), luego por partes, y deja correr
+    n2 = max(1, contratos // 2)
+    resto = contratos - n2
+    n3 = max(0, resto // 2) if resto >= 2 else 0
+    n5 = max(0, (resto - n3) // 2) if (resto - n3) >= 2 else 0
+    corre = resto - n3 - n5
+
+    filas = []
+    acum = 0
+    for mult, n, etiqueta in [(2, n2, "Recuperas TODO tu capital"),
+                              (3, n3, "Ganancia asegurada"),
+                              (5, n5, "Más ganancia")]:
+        if n <= 0:
+            continue
+        entra = round(prima * mult * 100 * n)
+        acum += entra
+        p = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], mult, tp) if not h.get("sin_datos") else None
+        filas.append({"Escalón": f"×{mult}", "Vendes": f"{n} contrato(s)",
+                      "Recibes": f"${entra:,}", "Acumulado": f"${acum:,}",
+                      "Prob.": f"{p:.0f}%" if p else "—", "Qué logras": etiqueta})
+    if corre > 0:
+        p10 = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 10, tp) if not h.get("sin_datos") else None
+        filas.append({"Escalón": "×10+", "Vendes": f"{corre} corriendo",
+                      "Recibes": f"${round(prima*10*100*corre):,}", "Acumulado": "—",
+                      "Prob.": f"{p10:.0f}%" if p10 else "—",
+                      "Qué logras": "🚀 AQUÍ están los ×10 — por sostener"})
+    if not filas:
+        return
+    st.markdown("**🪜 Tu escalera de venta** — así es como se llega a los ×10")
+    st.dataframe(pd.DataFrame(filas), hide_index=True, use_container_width=True)
+    st.caption(f"Invertiste **${costo_total:,}**. Al ×2 ya lo recuperaste todo: de ahí en adelante "
+               f"**juegas con dinero de la casa**. Por eso puedes dejar correr los últimos "
+               f"contratos sin miedo — es exactamente lo que hace Alejandro para llegar a ×10-×20.")
+
+
 def jugada_x10(s: dict, h: dict, tp: str):
     """
     🎰 LA JUGADA ×10 — el billete de lotería, visible y accionable.
@@ -305,7 +347,11 @@ def panel_dinero(s: dict):
           st.caption("El multiplicador SIN el tiempo engaña: un ×2 en ~1 día es un negoción; "
                      "un ×2 en ~7 días, según tu regla, no vale la pena.")
         # --- la opción AGRESIVA (billete de lotería) — en desplegable para no cargar de más ---
-        # ═══ 🎰 LA JUGADA ×10 (billete de lotería) — visible y accionable ═══
+        # ═══ 🪜 LA ESCALERA DE VENTA — así se llega a los ×10 (sostener) ═══
+        n_esc = int(st.session_state.get(f"nc_{s['ticker']}_{s['estrategia']}", 4) or 4)
+        escalera_de_venta(cot["premium"], max(2, n_esc), h, s, tp, cot)
+
+        # ═══ 🎰 Y aparte, la lotería barata (opcional, tajada chica) ═══
         jugada_x10(s, h, tp)
 
         with st.expander("Comparar en detalle balanceada vs agresiva"):
@@ -1037,10 +1083,11 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
                         f"color:#7A5B00;'>⚡ <b>Velocidad — +20% en el día: <span style='color:{sc_col};'>{ps}%</span></b> "
                         f"<span style='color:#9AA0A6;'>· {apto}</span></div>", unsafe_allow_html=True)
 
-        # 🧭 PLAN DEL MÉTODO (Cardona, decidido con Oscar): +100% vende la mitad, aguanta, NO cortes.
-        plan_tit = "🎯 PLAN DEL MÉTODO"
-        plan_txt = ("Entra → al **+100%** (dobló) vende la **MITAD** (recuperas todo tu capital) y "
-                    "aguanta el resto. Pérdida topada en la prima. **NO cortes por miedo.**")
+        # 🧭 PLAN DEL MÉTODO: la ESCALERA de venta (así es como salen los ×10)
+        plan_tit = "🪜 PLAN: LA ESCALERA"
+        plan_txt = ("**×2** vende la mitad (recuperas tu capital) → **×3** vende una parte → "
+                    "**×5** vende otra → **deja 1-2 contratos CORRIENDO**. "
+                    "Ahí es donde aparecen los ×10-×20. **No vendas todo al doblar.**")
         plan_col = "#0E6E7D"
         st.markdown(f"<div style='background:{plan_col}14;border-radius:8px;padding:6px 10px;margin-top:4px;'>"
                     f"<b style='color:{plan_col};font-size:.86rem;'>{plan_tit}</b>"
