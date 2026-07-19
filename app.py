@@ -524,7 +524,12 @@ def _grupo_corr(tk: str):
 
 
 def choque_correlacion(ticker: str, abiertos: list[str]) -> list[str]:
-    """¿Esta señal REPITE una apuesta que ya tienes abierta? (correlación real)."""
+    """
+    Nota SUAVE de correlación (no es un bloqueo). Las mega-caps son empresas
+    independientes con vida propia; solo tienden a moverse juntas en días de
+    MERCADO (correlación ~0.7, no 1.0). Es un dato para tener en cuenta, no un
+    'estás doblando la apuesta'.
+    """
     tk = ticker.upper()
     ab = {a.upper() for a in abiertos if a.upper() != tk}
     avisos = []
@@ -532,12 +537,10 @@ def choque_correlacion(ticker: str, abiertos: list[str]) -> list[str]:
     if g:
         mismos = sorted(a for a in ab if _grupo_corr(a) == g)
         if mismos:
-            avisos.append(f"Ya tienes {', '.join(mismos)} en «{g}» — es la misma apuesta, no diversificas")
-    # el SPY es el mercado entero: solapa con casi todo lo grande
-    if tk == "SPY" and (_TECH_GRANDE & ab):
-        avisos.append("El SPY contiene a las tech que ya tienes abiertas — estás doblando lo mismo")
-    elif tk in _TECH_GRANDE and "SPY" in ab:
-        avisos.append(f"Ya tienes SPY, que CONTIENE a {tk} — estarías doblando la exposición")
+            avisos.append(f"{tk} y {', '.join(mismos)} son «{g}»: tienden a moverse juntas en un "
+                          "día de mercado (no en el día a día). No es la misma apuesta, pero tenlo presente.")
+    if tk in _TECH_GRANDE and "SPY" in ab:
+        avisos.append(f"El SPY ya incluye algo de {tk} (es de sus mayores pesos), así que esta lo refuerza un poco.")
     return avisos
 
 
@@ -633,8 +636,9 @@ def veredicto_compra(s: dict) -> dict:
     except Exception:
         pass
 
-    # --- 8) TU SITUACIÓN + CORRELACIÓN: ¿te toca, y no repites la misma apuesta? ---
+    # --- 8) TU SITUACIÓN: ¿te toca tomarla? (cupo). La correlación va como NOTA suave ---
     frena_cartera = []
+    notas = []
     try:
         c = estado_cartera()
         if c["abiertas"] >= 4:
@@ -643,8 +647,8 @@ def veredicto_compra(s: dict) -> dict:
             frena_cartera.append(f"Ya abriste {c['esta_semana']} esta semana — el método pide 2-4, no más")
         if s["ticker"] in c["tickers"]:
             frena_cartera.append(f"Ya tienes una posición abierta en {s['ticker']} — no concentres")
-        # correlación: SPY/QQQ contienen a las mega-caps; varias tech = la misma apuesta
-        frena_cartera += choque_correlacion(s["ticker"], c["tickers"])
+        # correlación: SOLO informa (no baja el veredicto ni frena)
+        notas = choque_correlacion(s["ticker"], c["tickers"])
     except Exception:
         pass
 
@@ -661,11 +665,11 @@ def veredicto_compra(s: dict) -> dict:
                     "resumen": ("Estás sobre tu cupo, PERO esta señal es excepcional "
                                 "(ventaja alta, muy probable, rápida y con muestra grande). "
                                 "Si vas a romper el cupo alguna vez, es por una así."),
-                    "ok": ok, "falla": [], "ojo": ojo + frena_cartera}
+                    "ok": ok, "falla": [], "ojo": ojo + frena_cartera, "notas": notas}
         return {"nivel": "espera", "titulo": "🟠 BUENA — pero vas sobre tu cupo",
                 "resumen": ("La señal cumple, pero no es excepcional y ya vas sobre el ritmo del "
                             "método. **Tú decides**: lo prudente es guardar el turno."),
-                "ok": ok, "falla": [], "ojo": ojo + frena_cartera}
+                "ok": ok, "falla": [], "ojo": ojo + frena_cartera, "notas": notas}
     if falla:
         nivel, titulo = "pasa", "⚪ PÁSALA — no es de las buenas"
         resumen = "No cumple lo mínimo. Esperar es la jugada correcta."
@@ -676,7 +680,7 @@ def veredicto_compra(s: dict) -> dict:
         nivel, titulo = "tomala", "🟢 TÓMALA — es de las buenas de la semana"
         resumen = "Cumple TODO. Esta es de las 2-4 que vale la pena tomar."
     return {"nivel": nivel, "titulo": titulo, "resumen": resumen,
-            "ok": ok, "falla": falla, "ojo": ojo}
+            "ok": ok, "falla": falla, "ojo": ojo, "notas": notas}
 
 
 def grafico_prob_tiempo(s: dict, cot: dict, h: dict, tp: str, key: str):
@@ -1001,6 +1005,8 @@ def tarjeta(s: dict):
                 st.markdown(f"⚠️ {r}")
             for r in vc["ok"]:
                 st.markdown(f"✅ {r}")
+            for r in vc.get("notas", []):
+                st.markdown(f"🔗 *{r}*")
             st.caption("Para ser **de las buenas** tiene que cumplir las 4 obligatorias: entrada "
                        "confirmada · ventaja ×1.2 · 50% de doblar · muestra de 12+ casos.")
 
