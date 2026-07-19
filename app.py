@@ -163,12 +163,74 @@ def cotizacion_por_prima(ticker: str, tipo: str, precio: float, dias: int) -> di
 
 
 @st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
+def cotizacion_x10(ticker: str, tipo: str, precio: float) -> dict | None:
+    """La opción de lotería, elegida por prima BARATA (donde viven los ×10)."""
+    from config import VENCIMIENTO_DIAS_AGRESIVO
+    # buscamos contratos muy baratos: entre 5 y 20 centavos
+    return opcion_real.cotizar_por_prima(ticker, tipo, precio,
+                                         VENCIMIENTO_DIAS_AGRESIVO, rango=(0.05, 0.20))
+
+
 def cotizacion_agresiva(ticker: str, tipo: str, precio: float) -> dict | None:
     """La opción 'lotería': más fuera del dinero y vencimiento corto (×10 posible)."""
     from config import STRIKE_OTM_AGRESIVO, VENCIMIENTO_DIAS_AGRESIVO
     signo = 1 if tipo == "CALL" else -1
     strike = round(precio * (1 + signo * STRIKE_OTM_AGRESIVO / 100), 2)
     return opcion_real.cotizar(ticker, tipo, strike, VENCIMIENTO_DIAS_AGRESIVO)
+
+
+def jugada_x10(s: dict, h: dict, tp: str):
+    """
+    🎰 LA JUGADA ×10 — el billete de lotería, visible y accionable.
+    Es la opción MÁS BARATA y más lejos del dinero: improbable, pero cuando pega
+    multiplica por 10 o más. Aquí es donde viven los ×10 de Alejandro.
+    Regla de oro: se juega con una TAJADA CHICA, dinero que das por perdido.
+    """
+    # primero la lotería barata (prima 0.05-0.20); si no hay, la agresiva por % OTM
+    cot_ag = (cotizacion_x10(s["ticker"], s["opcion"]["tipo"], s["precio"])
+              or cotizacion_agresiva(s["ticker"], s["opcion"]["tipo"], s["precio"]))
+    if not cot_ag or h.get("sin_datos"):
+        return
+    p10 = opcion_real.prob_de_multiplo(s["precio"], cot_ag, h["targets"], 10, tp)
+    p5 = opcion_real.prob_de_multiplo(s["precio"], cot_ag, h["targets"], 5, tp)
+    t10 = opcion_real.tiempo_de_multiplo(s["precio"], cot_ag, h["targets"], 10, tp)
+    costo = round(cot_ag["premium"] * 100)
+    if not p10 or p10 < 1:
+        return  # si ni siquiera hay chance histórica, no se la ofrecemos
+
+    with st.container(border=True):
+        st.markdown("#### 🎰 La jugada ×10 (billete de lotería)")
+        a, b, c = st.columns(3)
+        a.metric("Cuesta", f"${costo}", help="Mucho más barata que la balanceada.")
+        b.metric("Prob. de ×10", f"{p10:.0f}%", help="Histórica, con esta misma señal.")
+        c.metric("Prob. de ×5", f"{p5:.0f}%")
+        venc_x = _fecha_es(cot_ag["exp"])
+        st.markdown(f"**{s['opcion']['tipo']} {s['ticker']} · strike {cot_ag['strike']}** · "
+                    f"vence {venc_x} ({cot_ag['dias']} días)")
+        if cot_ag.get("bid") is not None and cot_ag.get("ask"):
+            st.caption(f"Pagas ${cot_ag['premium']} (ask) · bid ${cot_ag.get('bid')} / "
+                       f"ask ${cot_ag.get('ask')}")
+        st.markdown(f"👉 Si pega el ×10, **${costo} se convierten en ~${costo*10:,}**"
+                    + (f" (tarda ~{t10:.0f} días)" if t10 else ""))
+        st.warning(
+            f"⚠️ **Es lotería, y hay que jugarla como tal.** Lo más probable ({100-p10:.0f}%) "
+            "es que se vaya a **cero**. Métele solo una **tajada chica** — dinero que ya diste "
+            "por perdido. **Nunca** el tamaño de una operación normal.")
+        cuenta = int(st.session_state.get("cuenta_usd", 1000))
+        sugerido = max(1, int((cuenta * 0.03) // costo)) if costo else 1
+        st.info(f"💡 Tamaño sugerido: **3% de tu cuenta** (${round(cuenta*0.03)}) → "
+                f"**{sugerido} contrato(s)** = ${sugerido*costo}. Si se va a cero, no te duele.")
+        cc = st.columns([1, 2])
+        n_x = cc[0].number_input("Contratos", min_value=1, value=sugerido, step=1,
+                                 key=f"x10n_{s['ticker']}_{s['estrategia']}")
+        if cc[1].button("🎰 La compré — registrar la lotería",
+                        key=f"x10r_{s['ticker']}_{s['estrategia']}", use_container_width=True):
+            bitacora.agregar("simulacion", s["ticker"], s["direccion"], s["estrategia"],
+                             cot_ag["strike"], cot_ag["premium"], int(n_x),
+                             nota="🎰 jugada ×10 (lotería, tajada chica)",
+                             vencimiento=cot_ag["exp"])
+            st.success(f"✅ Registrada la lotería: {s['ticker']} {cot_ag['strike']} × {n_x}")
 
 
 def panel_dinero(s: dict):
@@ -243,7 +305,10 @@ def panel_dinero(s: dict):
           st.caption("El multiplicador SIN el tiempo engaña: un ×2 en ~1 día es un negoción; "
                      "un ×2 en ~7 días, según tu regla, no vale la pena.")
         # --- la opción AGRESIVA (billete de lotería) — en desplegable para no cargar de más ---
-        with st.expander("🎰 ¿Y si busco el moonshot (×10)? — ver la opción agresiva"):
+        # ═══ 🎰 LA JUGADA ×10 (billete de lotería) — visible y accionable ═══
+        jugada_x10(s, h, tp)
+
+        with st.expander("Comparar en detalle balanceada vs agresiva"):
           cot_ag = cotizacion_agresiva(s["ticker"], o["tipo"], s["precio"])
           if not cot_ag:
             st.caption("No pude cotizar la opción agresiva ahora.")
