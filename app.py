@@ -287,7 +287,8 @@ def panel_dinero(s: dict):
     """💵 Cuánto dinero podrías hacer, con la prima REAL de la opción."""
     st.markdown("#### 💵 Cuánto podrías hacer (prima real, en vivo)")
     o = s["opcion"]
-    cot = cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
+    cot = (cotizacion_por_prima(s["ticker"], o["tipo"], s["precio"], o["dias_vencimiento"])
+           or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"]))
     if not cot:
         st.caption("No pude traer la prima real ahora mismo (a veces el mercado tarda). Intenta refrescar.")
         return
@@ -1274,7 +1275,11 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
     mostrados = []
     for s in filt[:25]:
         o = s["opcion"]
-        cot = cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
+        # EL MISMO CONTRATO QUE SE VA A COMPRAR: por PRECIO DE LA PRIMA (regla de
+        # Cardona), no por % OTM. Si se juzga uno y se compra otro, el veredicto
+        # miente (pasó: juzgaba uno de $4.50 y la orden daba uno de $0.65).
+        cot = (cotizacion_por_prima(s["ticker"], o["tipo"], s["precio"], o["dias_vencimiento"])
+               or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"]))
         s["_cot"] = cot
         costo = round(cot["premium"] * 100) if cot else None
         if presupuesto and costo and costo > presupuesto:
@@ -1709,9 +1714,10 @@ if dashboard:
         ("🧪 Motor paralelo", "Fuera del S&P 500 — más potencial, más riesgo", "FUERA", "par"),
     ]
     def calcular_ve(s):
-        """Calcula el Valor Esperado real (con prima real) y lo guarda en la señal."""
+        """Calcula el Valor Esperado real, sobre el MISMO contrato que se compra."""
         o = s["opcion"]
-        cot = cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
+        cot = (cotizacion_por_prima(s["ticker"], o["tipo"], s["precio"], o["dias_vencimiento"])
+               or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"]))
         s["_cot"] = cot
         hh = historial(s["ticker"], s["estrategia"])
         if cot and hh and not hh.get("sin_datos"):
@@ -1723,7 +1729,8 @@ if dashboard:
     def calcular_scalp(s):
         """Prob de +20% en el día (para rankear scalp). Guarda el orden en la señal."""
         o = s["opcion"]
-        cot = cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
+        cot = (cotizacion_por_prima(s["ticker"], o["tipo"], s["precio"], o["dias_vencimiento"])
+               or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"]))
         s["_cot"] = cot
         hh = historial(s["ticker"], s["estrategia"])
         if cot and hh and not hh.get("sin_datos") and hh.get("mfe_dias"):
@@ -1828,7 +1835,8 @@ if ampliado:
     mostrados = []
     for s in filt[:20]:
         o = s["opcion"]
-        cot = cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"])
+        cot = (cotizacion_por_prima(s["ticker"], o["tipo"], s["precio"], o["dias_vencimiento"])
+               or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"]))
         s["_cot"] = cot
         costo = round(cot["premium"] * 100) if cot else None
         if presupuesto and costo and costo > presupuesto:
