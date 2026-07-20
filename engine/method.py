@@ -430,14 +430,28 @@ def _eval_tres_semanas(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 # PUTS (día 2) — las cinco estrategias bajistas
 # ---------------------------------------------------------------------------
-def _vela_apertura(df: pd.DataFrame):
-    """La vela de APERTURA (9:30-10:00) de la sesión más reciente. None si no está."""
+def _vela_apertura(df: pd.DataFrame, ahora: datetime | None = None):
+    """
+    La vela de APERTURA (9:30-10:00) de la sesión más reciente, SOLO si ya CERRÓ.
+    Crítico: antes de las 10:00 esa vela se está formando y su color puede cambiar
+    (verde ahora, roja al cerrar). Usarla en formación produce señales FALSAS.
+    """
     try:
+        ahora = ahora or datetime.now(ET)
         idx = df.index
         idx_et = idx.tz_convert(ET) if idx.tz is not None else idx.tz_localize(ET)
-        es_apertura = [(t.hour == 9 and t.minute == 30) for t in idx_et]
-        pos = [i for i, ok in enumerate(es_apertura) if ok]
-        return df.iloc[pos[-1]] if pos else None
+        pos = [i for i, t in enumerate(idx_et) if t.hour == 9 and t.minute == 30]
+        if not pos:
+            return None
+        i = pos[-1]
+        # Debe ser la apertura de HOY: la señal de "primera vela roja" es del día
+        # en curso. Una vela de apertura de días pasados NO es señal de hoy.
+        if idx_et[i].date() != ahora.date():
+            return None
+        # ¿ya cerró? la vela de 9:30 cierra a las 10:00 de ESE día
+        if idx_et[i] + pd.Timedelta(minutes=30) > ahora:
+            return None      # todavía en formación -> no hay señal válida
+        return df.iloc[i]
     except Exception:
         return None
 
@@ -653,11 +667,20 @@ def evaluar(ticker: str, df: pd.DataFrame, estrategia: str) -> dict:
     """
     intervalo = ESTRATEGIAS[estrategia].get("intervalo", "1d")
     ahora = datetime.now(ET)
+    df_original = df          # sin recortar (lo necesita 'primera vela roja')
     # Reglas de horario de Cardona (solo intradía): vela final + candado 11am.
     df, hora_cierre = _vela_final_intradia(df, intervalo, ahora)
 
     ev = _EVALUADORES[estrategia]
-    r = _eval_primer_gap_alza(ticker, df) if ev is None else ev(df)
+    if ev is None:
+        r = _eval_primer_gap_alza(ticker, df)
+    elif estrategia == "primera_vela_roja":
+        # necesita el df SIN recortar: ella misma verifica que la vela de apertura
+        # sea de HOY y ya haya cerrado (el recorte previo la eliminaría y agarraría
+        # la de un día anterior, produciendo señales falsas).
+        r = ev(df_original)
+    else:
+        r = ev(df)
     chk = r["checklist"]
     score = _score(chk)
     estado = _estado(score, chk)

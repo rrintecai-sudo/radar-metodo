@@ -270,6 +270,10 @@ def gap_de_sesion(df: pd.DataFrame) -> dict | None:
     if not pos_hoy or pos_hoy[0] == 0:
         return None
     i0 = pos_hoy[0]
+    # CRÍTICO: las estrategias de gap miran las DOS primeras velas de la sesión.
+    # Si solo hay una (la de apertura, aún formándose), no hay nada que confirmar.
+    if len(pos_hoy) < 2:
+        return None
     ap = float(df.iloc[i0]["Open"])
     cierre_prev = float(df.iloc[i0 - 1]["Close"])
     if cierre_prev <= 0:
