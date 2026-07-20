@@ -24,7 +24,8 @@ from pathlib import Path
 from config import (ESTRATEGIAS, UNIVERSO, UNIVERSO_NUCLEO,
                     VIGILANTE_MAX_DIAS_X2, VIGILANTE_MIN_PROB_X2)
 from engine import calendar as cal
-from engine import backtest, earnings, notify, opcion_real, premarket, screener
+from engine import (backtest, earnings, notify, opcion_real, premarket,
+                    screener, veredicto)
 
 ESTADO = Path(__file__).resolve().parent / "data" / "cache" / "alertas_estado.json"
 INTERVALO_DEF = 10  # minutos
@@ -132,6 +133,29 @@ def escanear_y_avisar() -> int:
             continue
         clave = f"{s['ticker']}|{s['estrategia']}|{hoy}"
         if clave in estado["avisadas"]:
+            continue
+
+        # ═══ MISMO CRITERIO QUE EL RADAR: solo se avisa lo que el veredicto aprueba.
+        # (Antes el Vigilante avisaba cualquier ENTRADA y el Radar la rechazaba
+        #  -> te llegaban alertas de señales que la web decía NO tomar.)
+        o = s["opcion"]
+        try:
+            cot = opcion_real.cotizar_por_prima(s["ticker"], o["tipo"], s["precio"],
+                                                o["dias_vencimiento"])
+        except Exception:
+            cot = None
+        h = s.get("historial") or backtest.historial_senal(s["ticker"], s["estrategia"])
+        es_accion = UNIVERSO.get(s["ticker"], {}).get("clase") == "accion"
+        try:
+            earn_riesgo = earnings.contexto(s["ticker"], o["dias_vencimiento"],
+                                            es_accion).get("nivel") == "riesgo"
+        except Exception:
+            earn_riesgo = False
+        pasa, motivos = veredicto.califica(s, cot, h, earnings_riesgo=earn_riesgo)
+        if not pasa:
+            print(f"[{ahora.strftime('%H:%M')}] — {s['ticker']} {s['estrategia']}: "
+                  f"no califica ({'; '.join(motivos[:2])})")
+            estado["avisadas"].append(clave)   # no repetir el análisis hoy
             continue
 
         if es_intra:
