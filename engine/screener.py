@@ -126,7 +126,11 @@ def escanear_universo(tickers: list[str] | None = None,
 
     for i, s in enumerate(activas):
         h = None
-        if con_backtest and i < TOPE_BACKTEST:
+        # SIEMPRE backtesteamos las ENTRADAS confirmadas: sin histórico, el
+        # veredicto no puede juzgarlas y las descarta por "muestra chica" — que
+        # es un falso negativo (la señal podía ser buena y nunca se miró).
+        # El tope solo aplica a las que están en VIGILAR (aún no son entrada).
+        if con_backtest and (s["estado"] == "ENTRADA" or i < TOPE_BACKTEST):
             h = backtest.historial_senal(s["ticker"], s["estrategia"])
         if h and not h.get("sin_datos"):
             s["historial"] = h
