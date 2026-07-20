@@ -444,12 +444,14 @@ def _vela_apertura(df: pd.DataFrame, ahora: datetime | None = None):
         if not pos:
             return None
         i = pos[-1]
-        # Debe ser la apertura de HOY: la señal de "primera vela roja" es del día
-        # en curso. Una vela de apertura de días pasados NO es señal de hoy.
-        if idx_et[i].date() != ahora.date():
+        # La apertura debe ser la de la sesión ACTUAL del gráfico (la última que
+        # hay). Así vale igual en vivo (hoy) y en backtest (el día simulado).
+        if idx_et[i].date() != idx_et[-1].date():
             return None
-        # ¿ya cerró? la vela de 9:30 cierra a las 10:00 de ESE día
-        if idx_et[i] + pd.Timedelta(minutes=30) > ahora:
+        # Y si esa sesión es la de HOY en vivo, la vela debe haber CERRADO ya
+        # (cierra a las 10:00). En backtest la vela es histórica: ya cerró.
+        if idx_et[i].date() == ahora.date() and \
+                idx_et[i] + pd.Timedelta(minutes=30) > ahora:
             return None      # todavía en formación -> no hay señal válida
         return df.iloc[i]
     except Exception:
