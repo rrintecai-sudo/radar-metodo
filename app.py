@@ -860,6 +860,26 @@ def orden_de_compra(s: dict):
         b.info("**💵 Precio REAL de compra:**\n\n" + detalle +
                "\nEste es el **ask del mercado** — lo que pagas al comprar ahora. "
                "Puede moverse unos centavos; confírmalo al ejecutar.")
+
+        # ═══ 🛑 CANDADO ANTES DE COMPRAR — los 2 chequeos, dentro de la orden ═══
+        # No dependemos de que Oscar "recuerde": el sistema le pone los 2 controles
+        # que fallaron esta semana (fecha por defecto = hoy; prima en centavos =
+        # contrato equivocado) AQUÍ, como parte de la ejecución.
+        prima_lo = round(prima * 0.4, 2)   # si ve menos que esto, escogió otra cosa
+        st.markdown(
+            f"<div style='background:#B3261E;color:white;border-radius:12px;padding:14px 18px;margin:8px 0'>"
+            f"<div style='font-size:.72rem;letter-spacing:.1em;opacity:.9;font-weight:700'>"
+            f"🛑 ANTES DE APRETAR COMPRAR — 2 CHEQUEOS EN uCharts</div>"
+            f"<div style='font-size:1.02rem;margin-top:6px'>"
+            f"<b>1. 📅 FECHA = {cot['exp']}</b> ({venc}).&nbsp; "
+            f"uCharts pone <u>HOY</u> por defecto — <b>cámbiala a esta.</b></div>"
+            f"<div style='font-size:1.02rem;margin-top:5px'>"
+            f"<b>2. 💵 PRECIO ≈ ${prima}</b> (1 contrato ≈ ${costo1}).&nbsp; "
+            f"Si ves <b>centavos</b> o algo muy distinto, <b>PARA</b> — es otro contrato.</div>"
+            f"<div style='margin-top:8px;font-weight:800;font-size:1.05rem'>"
+            f"✅ Si los DOS cuadran → compra. &nbsp; ❌ Si uno falla → NO compres.</div>"
+            f"</div>", unsafe_allow_html=True)
+
         # ═══ 🎯 LA DECISIÓN DEL SISTEMA: cuántos comprar (regla del 10%, no tú) ═══
         # Tu capital, editable AQUÍ mismo y GLOBAL (queda igual en todas las fichas).
         cc = st.columns([1, 1])
