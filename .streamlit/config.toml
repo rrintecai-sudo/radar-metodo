@@ -9,3 +9,11 @@ font = "sans serif"
 
 [server]
 headless = true
+# PUERTO FIJO: el Radar SIEMPRE vive en http://localhost:8501. Nunca cambia.
+port = 8501
+# Recarga solo cuando cambia el código: NO hay que matar ni reabrir el servidor.
+# El servidor se queda arriba; los cambios entran solos al guardar el archivo.
+runOnSave = true
+
+[browser]
+gatherUsageStats = false
