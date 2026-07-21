@@ -1110,10 +1110,12 @@ def render_ficha_pagina(ticker: str, est: str):
         s = reconstruir(ticker, est)
         if not s:
             st.error(f"No pude cargar {ticker}."); return
-        o = s["opcion"]
-        s["_cot"] = cotizacion(ticker, o["tipo"], o["strike"], o["dias_vencimiento"])
+        # MISMO cálculo que la tarjeta de la lista: contrato por prima + ventaja +
+        # probabilidades. Sin esto, la ficha juzgaba a ciegas y decía PÁSALA
+        # aunque la lista dijera TÓMALA (mismo activo, dos respuestas).
+        enriquecer_veredicto(s)
         nombre = UNIVERSO.get(ticker, {}).get("nombre", ticker)
-        st.markdown(f"# {ticker} · {o['tipo']}  —  {nombre}")
+        st.markdown(f"# {ticker} · {s['opcion']['tipo']}  —  {nombre}")
         tarjeta(s)
 
 
@@ -1269,6 +1271,49 @@ def aplicar_filtros(ops: list[dict], min_cond: int, direccion_f: str,
     return filt
 
 
+def enriquecer_veredicto(s: dict) -> dict:
+    """
+    Pega en la señal el CONTRATO REAL (por prima) y TODOS los números que el
+    veredicto necesita: ventaja (_ve), probabilidad y tiempo de doblar/recuperar,
+    logros. UNA sola fuente para todas las pantallas.
+
+    Antes esto vivía suelto dentro de render_grid: la tarjeta de la lista SÍ lo
+    corría, pero la ficha completa NO -> el veredicto de la ficha juzgaba a ciegas
+    (_ve = None -> "sin datos" -> PÁSALA) mientras la lista decía TÓMALA. Mismo
+    activo, dos respuestas. Con esto ya no pueden contradecirse.
+    """
+    o = s["opcion"]
+    # EL MISMO CONTRATO QUE SE COMPRA: por prima (regla de Cardona), no por % OTM.
+    cot = (cotizacion_por_prima(s["ticker"], o["tipo"], s["precio"], o["dias_vencimiento"])
+           or cotizacion(s["ticker"], o["tipo"], o["strike"], o["dias_vencimiento"]))
+    s["_cot"] = cot
+    if not cot:
+        s["_ve"] = None; s["_vale"] = False
+        return s
+    tp = o["tipo"]
+    h = historial(s["ticker"], s["estrategia"])
+    tiene_h = h and not h.get("sin_datos")
+    ve = opcion_real.valor_esperado(s["precio"], cot, h["targets"], s.get("mfe_max") or 0, tp) if tiene_h else None
+    mult = opcion_real.multiplo(s["precio"], cot, s.get("mfe_max") or 0, tp)
+    umbral = max(PREMIO_PISO_ABSOLUTO, PREMIO_MINIMO_POR_ESTRATEGIA.get(s["estrategia"], 1.5))
+    s["_ve"] = ve
+    s["_vale"] = bool(ve is not None and ve >= 1.2 and mult >= umbral)
+    s["_t_recup"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
+    s["_t_x2"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
+    s["_p_recup"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
+    s["_p_x2"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
+    s["_p_scalp"] = (opcion_real.prob_multiplo_en_dias(s["precio"], cot, h["mfe_dias"], 1.2, 1, tp)
+                     if (tiene_h and h.get("mfe_dias")) else None)
+    s["_logros"] = []
+    if tiene_h:
+        for etiqueta, mult_n in [("Recuperar (+50%)", 1.5), ("Doblar (×2)", 2),
+                                 ("Triplicar (×3)", 3)]:
+            p = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], mult_n, tp)
+            t = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], mult_n, tp)
+            s["_logros"].append((etiqueta, p, t))
+    return s
+
+
 def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 9,
                 moonshot: bool = False, filtro_premio: bool = False, ncols: int = 3) -> int:
     """Trae la prima real (respetando presupuesto) y pinta la parrilla de tarjetas."""
@@ -1298,36 +1343,9 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
         return 0
 
     # ¿cuáles VALEN LA PENA? (VE >= 1.2 y el premio justifica el tiempo)
+    # MISMO cálculo que usa la ficha completa -> nunca se contradicen.
     for s in mostrados:
-        cot = s.get("_cot")
-        if not cot:
-            s["_ve"] = None; s["_vale"] = False
-            continue
-        tp = s["opcion"]["tipo"]
-        h = historial(s["ticker"], s["estrategia"])
-        tiene_h = h and not h.get("sin_datos")
-        ve = opcion_real.valor_esperado(s["precio"], cot, h["targets"], s.get("mfe_max") or 0, tp) if tiene_h else None
-        mult = opcion_real.multiplo(s["precio"], cot, s.get("mfe_max") or 0, tp)
-        umbral = max(PREMIO_PISO_ABSOLUTO, PREMIO_MINIMO_POR_ESTRATEGIA.get(s["estrategia"], 1.5))
-        s["_ve"] = ve
-        s["_vale"] = bool(ve is not None and ve >= 1.2 and mult >= umbral)
-        # RECUPERAR (+50% = ×1.5) y DOBLAR (×2): probabilidad Y tiempo
-        s["_t_recup"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
-        s["_t_x2"] = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
-        s["_p_recup"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 1.5, tp) if tiene_h else None
-        s["_p_x2"] = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 2, tp) if tiene_h else None
-        # 🎯 LOGROS POSIBLES: prob de ×N dentro de D días (lo que Oscar quiere ver)
-        # ⚡ SCALP: probabilidad de +20% (×1.2) DENTRO del día (mismo día)
-        s["_p_scalp"] = (opcion_real.prob_multiplo_en_dias(s["precio"], cot, h["mfe_dias"], 1.2, 1, tp)
-                         if (tiene_h and h.get("mfe_dias")) else None)
-        # LOGROS POSIBLES: probabilidad + tiempo típico de cada meta (números honestos)
-        s["_logros"] = []
-        if tiene_h:
-            for etiqueta, mult_n in [("Recuperar (+50%)", 1.5), ("Doblar (×2)", 2),
-                                     ("Triplicar (×3)", 3)]:
-                p = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], mult_n, tp)
-                t = opcion_real.tiempo_de_multiplo(s["precio"], cot, h["targets"], mult_n, tp)
-                s["_logros"].append((etiqueta, p, t))
+        enriquecer_veredicto(s)
 
     if sum(1 for s in mostrados if s.get("_vale")) == 0:
         st.warning("⏳ **Ninguna de aquí vale la pena hoy** (valor esperado bajo o el premio no "
