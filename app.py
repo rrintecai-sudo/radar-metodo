@@ -122,7 +122,7 @@ def chequear_senal(ticker: str, direccion: str) -> tuple[str, str]:
         iv = ESTRATEGIAS[est]["intervalo"]
         try:
             df = method.preparar(data.obtener(ticker, iv))
-            s = method.evaluar(ticker, df, est)
+            s = method.evaluar(ticker, df, est, vivo=True)   # en vivo: rechaza datos viejos
         except Exception:
             continue
         if s["estado"] == "ENTRADA":
@@ -1073,7 +1073,7 @@ def reconstruir(ticker: str, est: str) -> dict | None:
     iv = ESTRATEGIAS[est]["intervalo"]
     try:
         df = method.preparar(data.obtener(ticker, iv))
-        s = method.evaluar(ticker, df, est)
+        s = method.evaluar(ticker, df, est, vivo=True)   # Radar en vivo: rechaza datos viejos
     except Exception:
         return None
     try:

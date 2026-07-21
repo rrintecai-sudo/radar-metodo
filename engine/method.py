@@ -430,11 +430,18 @@ def _eval_tres_semanas(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 # PUTS (día 2) — las cinco estrategias bajistas
 # ---------------------------------------------------------------------------
-def _vela_apertura(df: pd.DataFrame, ahora: datetime | None = None):
+def _vela_apertura(df: pd.DataFrame, ahora: datetime | None = None,
+                   vivo: bool = False):
     """
     La vela de APERTURA (9:30-10:00) de la sesión más reciente, SOLO si ya CERRÓ.
     Crítico: antes de las 10:00 esa vela se está formando y su color puede cambiar
     (verde ahora, roja al cerrar). Usarla en formación produce señales FALSAS.
+
+    vivo=True (escaneo en vivo / vigilante): la sesión del gráfico DEBE ser la de
+    HOY. Si los datos están viejos (fin de semana, feriado, premarket, o yfinance
+    devolvió rezagado) NO hay vela de apertura de hoy -> None. Fue justo el bug del
+    lunes 20-jul: tomó la apertura de un día anterior como si fuera la de hoy.
+    vivo=False (backtest/laboratorio): la sesión es histórica por diseño, se acepta.
     """
     try:
         ahora = ahora or datetime.now(ET)
@@ -448,8 +455,11 @@ def _vela_apertura(df: pd.DataFrame, ahora: datetime | None = None):
         # hay). Así vale igual en vivo (hoy) y en backtest (el día simulado).
         if idx_et[i].date() != idx_et[-1].date():
             return None
-        # Y si esa sesión es la de HOY en vivo, la vela debe haber CERRADO ya
-        # (cierra a las 10:00). En backtest la vela es histórica: ya cerró.
+        # EN VIVO: esa sesión tiene que ser la de HOY. Datos viejos -> sin señal.
+        if vivo and idx_et[i].date() != ahora.date():
+            return None
+        # Y si esa sesión es la de HOY, la vela debe haber CERRADO ya (cierra a las
+        # 10:00). En backtest la vela es histórica: ya cerró.
         if idx_et[i].date() == ahora.date() and \
                 idx_et[i] + pd.Timedelta(minutes=30) > ahora:
             return None      # todavía en formación -> no hay señal válida
@@ -458,7 +468,7 @@ def _vela_apertura(df: pd.DataFrame, ahora: datetime | None = None):
         return None
 
 
-def _eval_primera_vela_roja(df: pd.DataFrame) -> dict:
+def _eval_primera_vela_roja(df: pd.DataFrame, vivo: bool = False) -> dict:
     """
     Primera vela roja de apertura (30m, 10:00 en punto). LA ÚNICA que se compra
     a las 10am: si la vela 9:30-10:00 cierra ROJA -> PUT.
@@ -466,7 +476,7 @@ def _eval_primera_vela_roja(df: pd.DataFrame) -> dict:
     """
     chk = _nuevo_checklist()
     precio = float(df.iloc[-1]["Close"])
-    v = _vela_apertura(df)
+    v = _vela_apertura(df, vivo=vivo)
     if v is None:
         geo = {"enfasis_medias": [20, 40], "ruptura": {"hay": False, "texto": "Sin vela de apertura"},
                "vela_patron": None, "vela_ok": False}
@@ -673,12 +683,15 @@ _EVALUADORES = {
 # ---------------------------------------------------------------------------
 # API principal
 # ---------------------------------------------------------------------------
-def evaluar(ticker: str, df: pd.DataFrame, estrategia: str) -> dict:
+def evaluar(ticker: str, df: pd.DataFrame, estrategia: str,
+            vivo: bool = False) -> dict:
     """
     Evalúa UN activo con UNA estrategia. Devuelve la señal completa con score,
     estado, checklist, opción sugerida y explicación.
 
     `df` debe traer ya las columnas de promedios móviles (usa preparar()).
+    vivo=True (escaneo/Radar en vivo): 'primera vela roja' exige que la vela de
+    apertura sea de HOY (rechaza datos viejos). vivo=False: backtest/laboratorio.
     """
     intervalo = ESTRATEGIAS[estrategia].get("intervalo", "1d")
     ahora = datetime.now(ET)
@@ -693,7 +706,7 @@ def evaluar(ticker: str, df: pd.DataFrame, estrategia: str) -> dict:
         # necesita el df SIN recortar: ella misma verifica que la vela de apertura
         # sea de HOY y ya haya cerrado (el recorte previo la eliminaría y agarraría
         # la de un día anterior, produciendo señales falsas).
-        r = ev(df_original)
+        r = ev(df_original, vivo=vivo)
     else:
         r = ev(df)
     chk = r["checklist"]
@@ -816,10 +829,14 @@ def escanear_completo(estrategias: list[str] | None = None) -> list[dict]:
     return señales
 
 
-def escanear(datos: dict[str, pd.DataFrame], estrategias: list[str] | None = None) -> list[dict]:
+def escanear(datos: dict[str, pd.DataFrame], estrategias: list[str] | None = None,
+             vivo: bool = True) -> list[dict]:
     """
     Corre TODAS las estrategias sobre TODOS los activos y devuelve las señales
     ordenadas de más fuerte (mayor score, estado ENTRADA primero) a más débil.
+
+    vivo=True por defecto: escanear() es el escaneo EN VIVO (screener, bot de
+    papel). 'primera vela roja' rechazará datos viejos (fin de semana, feriado).
     """
     estrategias = estrategias or list(ESTRATEGIAS.keys())
     orden_estado = {"ENTRADA": 0, "VIGILAR": 1, "NADA": 2}
@@ -830,7 +847,7 @@ def escanear(datos: dict[str, pd.DataFrame], estrategias: list[str] | None = Non
         dfp = preparar(df)
         for est in estrategias:
             try:
-                señales.append(evaluar(ticker, dfp, est))
+                señales.append(evaluar(ticker, dfp, est, vivo=vivo))
             except Exception as e:
                 print(f"[method] {ticker}/{est} falló: {e}")
     señales.sort(key=lambda s: (orden_estado[s["estado"]], -s["score"]))

@@ -30,6 +30,26 @@ from engine import (backtest, earnings, notify, opcion_real, premarket,
 ESTADO = Path(__file__).resolve().parent / "data" / "cache" / "alertas_estado.json"
 INTERVALO_DEF = 10  # minutos
 
+# 🪜 LA ESCALERA DE VENTA (clase en vivo 21-jul: "saber comprar y saber vender").
+# Alejandro NO vende todo al doblar: vende por partes y deja correr hacia ×10-×20.
+# (ganancia_min_%, clave, título, qué hacer)
+ESCALERA_SALIDA = [
+    (100,  "x2",  "🎉 ¡DOBLÓ! +100%",
+     "VENDE LA MITAD — recuperas TODO tu capital. El resto queda corriendo GRATIS."),
+    (200,  "x3",  "📈 ×3 — +200%",
+     "Asegura ganancia: vende una parte más. Deja correr el resto hacia el ×10."),
+    (400,  "x5",  "🚀 ×5 — +400%",
+     "Vende otra parte. Con lo que quede vas por el billete grande. No lo botes por centavos."),
+    (900,  "x10", "🏆 ×10 — +900%",
+     "El billete de Alejandro. Vende casi todo; deja 1 corriendo o cierra. 'Saber vender.'"),
+]
+
+
+def escalon_alcanzado(ganancia_pct: float):
+    """El escalón de venta MÁS alto que ya se superó (o None si aún no dobla)."""
+    cruzados = [r for r in ESCALERA_SALIDA if ganancia_pct >= r[0]]
+    return cruzados[-1] if cruzados else None
+
 
 def _cargar_estado() -> dict:
     if ESTADO.exists():
@@ -226,21 +246,31 @@ def revisar_salidas() -> int:
             cot = None
         if cot:
             ganancia = (cot["premium"] - pe) / pe * 100 if pe else 0
-            if ganancia >= 100:
-                clave = f"salida_x2|{t['id']}|{hoy}"
+            # 🪜 escalera: avisa el escalón MÁS alto alcanzado (×2 → ×3 → ×5 → ×10),
+            # cada uno una sola vez. Si saltó varios de golpe, avisa el mayor y marca
+            # los inferiores como ya avisados (no rebobina).
+            r = escalon_alcanzado(ganancia)
+            if r:
+                clave = f"salida_{r[1]}|{t['id']}|{hoy}"
                 if clave not in estado["avisadas"]:
                     notify.enviar(
-                        f"🎉 ¡DOBLÓ! {etiqueta} — VENDE LA MITAD",
+                        f"{r[2]} — {etiqueta}",
                         f"Entrada ${pe} → ahora ${cot['premium']} (+{ganancia:.0f}%)\n"
-                        f"Vende la MITAD de tus {t['contratos']} contratos: recuperas TODO tu capital.\n"
-                        f"La otra mitad queda corriendo GRATIS.")
-                    estado["avisadas"].append(clave); avisos += 1
-                    print(f"[{ahora.strftime('%H:%M')}] 🎉 dobló: {etiqueta} (+{ganancia:.0f}%)")
+                        f"{r[3]}\n"
+                        f"Tienes {t['contratos']} contrato(s).")
+                    # marca este escalón y todos los inferiores como avisados
+                    for rr in ESCALERA_SALIDA:
+                        if rr[0] <= r[0]:
+                            c2 = f"salida_{rr[1]}|{t['id']}|{hoy}"
+                            if c2 not in estado["avisadas"]:
+                                estado["avisadas"].append(c2)
+                    avisos += 1
+                    print(f"[{ahora.strftime('%H:%M')}] {r[1]}: {etiqueta} (+{ganancia:.0f}%)")
 
         # --- 2) ¿apareció la señal de SALIDA? (primera vela del día) ---
         try:
             df30 = method.preparar(data.obtener(tk, "30m"))
-            v = method._vela_apertura(df30)
+            v = method._vela_apertura(df30, vivo=True)
         except Exception:
             v = None
         if v is not None and ahora.hour >= 10:

@@ -66,11 +66,16 @@ check("Vela de apertura YA CERRADA sí se usa",
       method._vela_apertura(df, ya_cerro) is not None,
       "no devolvió la vela aunque ya había cerrado")
 
-# Bug derivado: agarraba la vela de apertura de un DÍA ANTERIOR
+# Bug derivado: EN VIVO agarraba la vela de apertura de un DÍA ANTERIOR
+# (datos viejos: finde, feriado, premarket, o yfinance rezagado).
 df_viejo = _velas([(100, 99, 100.5, 98.5)], inicio="2026-07-17 09:30")
-check("No usa la vela de apertura de un día anterior",
-      method._vela_apertura(df_viejo, ya_cerro) is None,
+check("EN VIVO no usa la vela de apertura de un día anterior",
+      method._vela_apertura(df_viejo, ya_cerro, vivo=True) is None,
       "tomó la apertura de otro día como si fuera la de hoy")
+# Pero en BACKTEST esa misma vela histórica SÍ se usa (es el día simulado)
+check("En BACKTEST la vela histórica sí se usa",
+      method._vela_apertura(df_viejo, ya_cerro, vivo=False) is not None,
+      "el backtest se quedó sin la vela de apertura del día simulado")
 
 # Bug de la clase 20-jul: "primera vela roja" con gap AL ALZA no es "de apertura"
 check("gap_de_sesion necesita 2+ velas de la sesión",
@@ -162,6 +167,27 @@ check("Una vela verde SÓLIDA confirma la ruptura",
 check("Un hanger (cola larga) NO confirma la ruptura",
       zn.ruptura(hanger, 100.0, "call")["hay"] is False,
       "aceptó una vela débil como ruptura")
+
+# --- 8. LA ESCALERA DE VENTA (clase 21-jul: "saber vender") ---
+print("\n[8] Escalera de venta — el Vigilante avisa en cada escalón")
+
+import vigilante as vig
+
+check("Antes del +100% no hay escalón (no se vende aún)",
+      vig.escalon_alcanzado(80) is None, "avisó de venta antes de doblar")
+check("Al +100% el escalón es ×2 (vende la mitad)",
+      vig.escalon_alcanzado(100)[1] == "x2", "no reconoció el doble")
+check("Al +250% el escalón es ×3",
+      vig.escalon_alcanzado(250)[1] == "x3", "")
+check("Al +500% el escalón es ×5",
+      vig.escalon_alcanzado(500)[1] == "x5", "")
+check("Si salta directo a +1200% avisa el ×10 (el más alto)",
+      vig.escalon_alcanzado(1200)[1] == "x10",
+      "no avisó el escalón más alto cuando saltó varios de golpe")
+
+# Google e Intel: contrato $60-80 (clase 21-jul)
+check("Google e Intel buscan primas de $0.60-0.80",
+      PRIMA_OBJETIVO.get("GOOGL") == (0.60, 0.80) and PRIMA_OBJETIVO.get("INTC") == (0.60, 0.80), "")
 
 # --- RESULTADO ---
 print("\n" + "=" * 62)
