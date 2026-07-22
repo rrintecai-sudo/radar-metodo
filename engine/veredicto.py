@@ -19,7 +19,11 @@ from __future__ import annotations
 
 VE_MINIMO = 1.2          # por cada $1 arriesgado, esperar al menos $1.20
 PROB_X2_MINIMA = 50      # probabilidad de doblar
-MUESTRA_MINIMA = 12      # casos históricos para fiarse del porcentaje
+# Muestra mínima BAJADA de 12 a 6 (decisión 2026-07-22, modo prueba en papel): con 12
+# el motor rechazaba setups fuertes por falta de historia (Apple: VE 5.46, dobla 86%,
+# pero n=7 -> PÁSALA). En papel no perdemos nada probando: 6 casos ya dan una pista, y
+# el ranking sigue castigando la muestra chica (confiab_ajustada) y la marca en rojo.
+MUESTRA_MINIMA = 6       # casos históricos para fiarse del porcentaje
 
 # ── PUERTA DE ASIMETRÍA ──────────────────────────────────────────────────────
 # El oro (22-jul) doblaba solo el 31% de las veces, PERO cuando pega hace ×5-×7

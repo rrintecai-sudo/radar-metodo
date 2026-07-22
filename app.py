@@ -648,12 +648,14 @@ def veredicto_compra(s: dict) -> dict:
     else:
         falla.append(f"Probabilidad de doblar baja ({p2:.0f}%; se pide 50%)")
 
-    # --- 4) muestra ---
+    # --- 4) muestra (bajada a 6: modo prueba en papel; 6-11 avisa, no bloquea) ---
     n = s.get("n_muestra", 0) or 0
     if n >= 12:
         ok.append(f"Muestra confiable ({n} casos históricos)")
+    elif n >= 6:
+        ojo.append(f"Muestra chica ({n} casos) — el % es orientativo. En papel sirve para probar.")
     else:
-        falla.append(f"Muestra muy chica ({n} casos) — el % no es de fiar")
+        falla.append(f"Muestra muy chica ({n} casos) — sin base para juzgar")
 
     # --- 5) velocidad ---
     if t2 is not None:
