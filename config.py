@@ -280,6 +280,10 @@ SALIDA_GANANCIA_PCT = 100      # al +100% (dobló)
 SALIDA_VENDER_FRACCION = 0.5   # vender la mitad -> recuperas todo el capital; el resto corre gratis
 RIESGO_MAX_CAPITAL_PCT = 10   # "nunca más del 5-10% del capital en opciones"
 CAPITAL_PRUEBA = 500          # "apartar ~$500 que podemos perder por completo"
+# Capital de trabajo POR DEFECTO (editable en cada ficha). Es el saldo real de la
+# cuenta de papel de Oscar (~$14.000). Antes estaba en $1.000 y calculaba mal la
+# cantidad de contratos (decía "1" cuando la regla del 10% daba más).
+CAPITAL_DEFECTO = 14000
 
 # ---------------------------------------------------------------------------
 # 8) LAS 4 ESTRATEGIAS (Guía secc. 8, Compendio parte 2)

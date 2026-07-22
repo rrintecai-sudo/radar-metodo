@@ -19,7 +19,7 @@ import streamlit as st
 
 from config import (ACTIVOS, UNIVERSO, TICKERS, UNIVERSO_NUCLEO, UNIVERSO_PARALELO,
                     UNIVERSO_TICKERS, ESTRATEGIAS, ESTRATEGIAS_INICIALES,
-                    CAPITAL_PRUEBA, RIESGO_MAX_CAPITAL_PCT, SALIDA_GANANCIA_PCT,
+                    CAPITAL_DEFECTO, CAPITAL_PRUEBA, RIESGO_MAX_CAPITAL_PCT, SALIDA_GANANCIA_PCT,
                     PREMIO_MINIMO_POR_ESTRATEGIA, PREMIO_PISO_ABSOLUTO)
 from streamlit_autorefresh import st_autorefresh
 
@@ -267,7 +267,7 @@ def jugada_x10(s: dict, h: dict, tp: str):
             f"⚠️ **Es lotería, y hay que jugarla como tal.** Lo más probable ({100-p10:.0f}%) "
             "es que se vaya a **cero**. Métele solo una **tajada chica** — dinero que ya diste "
             "por perdido. **Nunca** el tamaño de una operación normal.")
-        cuenta = int(st.session_state.get("cuenta_usd", 1000))
+        cuenta = int(st.session_state.get("cuenta_usd", CAPITAL_DEFECTO))
         sugerido = max(1, int((cuenta * 0.03) // costo)) if costo else 1
         st.info(f"💡 Tamaño sugerido: **3% de tu cuenta** (${round(cuenta*0.03)}) → "
                 f"**{sugerido} contrato(s)** = ${sugerido*costo}. Si se va a cero, no te duele.")
@@ -759,7 +759,7 @@ def frase_de_decision(s: dict, cot: dict, costo1: int):
     p3 = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 3, tp)
 
     # cuántos contratos recomiendo (10% de la cuenta)
-    cuenta = int(st.session_state.get("cuenta_usd", 1000))
+    cuenta = int(st.session_state.get("cuenta_usd", CAPITAL_DEFECTO))
     riesgo = round(cuenta * RIESGO_MAX_CAPITAL_PCT / 100)
     n_rec = max(1, int(riesgo // costo1)) if costo1 else 1
     inv_total = n_rec * costo1
@@ -885,7 +885,7 @@ def orden_de_compra(s: dict):
         cc = st.columns([1, 1])
         cuenta = cc[0].number_input(
             "💼 Mi capital disponible ($)", min_value=100,
-            value=int(st.session_state.get("cuenta_usd", 1000)), step=100,
+            value=int(st.session_state.get("cuenta_usd", CAPITAL_DEFECTO)), step=100,
             key=f"cta_{s['ticker']}_{s['estrategia']}",
             help="Cámbialo cuando quieras. Se aplica a TODAS las fichas y recalcula la cantidad al instante.")
         if cuenta != st.session_state.get("cuenta_usd"):
@@ -1685,7 +1685,7 @@ if dashboard:
     cap_cols = st.columns([1, 3])
     cap = cap_cols[0].number_input(
         "💼 Mi capital ($)", min_value=100,
-        value=int(st.session_state.get("cuenta_usd", 1000)), step=100,
+        value=int(st.session_state.get("cuenta_usd", CAPITAL_DEFECTO)), step=100,
         help="Se usa en TODAS las fichas para calcular cuántos contratos comprar. "
              "También puedes cambiarlo dentro de cada oportunidad.")
     st.session_state["cuenta_usd"] = cap

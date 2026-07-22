@@ -1,3 +1,148 @@
 /Users/oscarrodriguez/Documents/ClaudeCode Proyectos/bolsa de valores -app/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
   warnings.warn(
 
+============================================================
+  VIGILANTE DEL MÉTODO — te aviso cuando haya una entrada
+  Canales: Mac ✅  ·  Telegram ✅
+============================================================
+[14:47] compras: 0 alertas nuevas.
+[14:53] compras: 0 alertas nuevas.
+[15:05] — SMCI piso_fuerte: no califica (probabilidad de doblar baja (14%; se pide 50%); muestra muy chica (7 casos; se piden 12))
+[15:05] — MU tres_semanas: no califica (muestra muy chica (5 casos; se piden 12))
+[15:05] — CRM tres_semanas: no califica (probabilidad de doblar baja (31%; se pide 50%))
+[15:05] — CRM piso_fuerte: no califica (ventaja insuficiente (×1.16; se pide ×1.2); probabilidad de doblar baja (31%; se pide 50%))
+[15:05] 🔔 📅 ENTRADA AMZN CALL — Tres semanas (decide al cierre ~3:55)
+[15:05] compras: 1 alertas nuevas.
+[15:10] compras: 0 alertas nuevas.
+[15:15] — GLD piso_fuerte: no califica (muestra muy chica (7 casos; se piden 12))
+[15:15] — GLD tres_semanas: no califica (probabilidad de doblar baja (39%; se pide 50%); muestra muy chica (8 casos; se piden 12))
+[15:15] — DIS piso_fuerte: no califica (ventaja insuficiente (×1.05; se pide ×1.2); probabilidad de doblar baja (7%; se pide 50%))
+[15:15] — DIS tres_semanas: no califica (probabilidad de doblar baja (27%; se pide 50%))
+[15:15] compras: 0 alertas nuevas.
+[15:21] compras: 0 alertas nuevas.
+[15:26] compras: 0 alertas nuevas.
+[15:31] compras: 0 alertas nuevas.
+[15:36] compras: 0 alertas nuevas.
+[15:41] compras: 0 alertas nuevas.
+[15:47] compras: 0 alertas nuevas.
+[15:52] compras: 0 alertas nuevas.
+[15:57] compras: 0 alertas nuevas.
+[16:02] fuera de la ventana de compra (10am–4pm ET).
+[16:07] fuera de la ventana de compra (10am–4pm ET).
+[16:12] fuera de la ventana de compra (10am–4pm ET).
+[16:17] fuera de la ventana de compra (10am–4pm ET).
+[16:22] fuera de la ventana de compra (10am–4pm ET).
+[16:27] fuera de la ventana de compra (10am–4pm ET).
+[16:32] fuera de la ventana de compra (10am–4pm ET).
+[16:37] fuera de la ventana de compra (10am–4pm ET).
+[16:42] fuera de la ventana de compra (10am–4pm ET).
+[16:47] fuera de la ventana de compra (10am–4pm ET).
+[16:52] fuera de la ventana de compra (10am–4pm ET).
+[17:22] fuera de la ventana de compra (10am–4pm ET).
+[17:31] fuera de la ventana de compra (10am–4pm ET).
+[17:45] fuera de la ventana de compra (10am–4pm ET).
+[17:50] fuera de la ventana de compra (10am–4pm ET).
+[17:55] fuera de la ventana de compra (10am–4pm ET).
+[18:00] fuera de la ventana de compra (10am–4pm ET).
+[18:05] fuera de la ventana de compra (10am–4pm ET).
+[18:10] fuera de la ventana de compra (10am–4pm ET).
+[18:15] fuera de la ventana de compra (10am–4pm ET).
+[18:20] fuera de la ventana de compra (10am–4pm ET).
+[18:25] fuera de la ventana de compra (10am–4pm ET).
+[18:30] fuera de la ventana de compra (10am–4pm ET).
+[18:35] fuera de la ventana de compra (10am–4pm ET).
+[18:40] fuera de la ventana de compra (10am–4pm ET).
+[18:45] fuera de la ventana de compra (10am–4pm ET).
+[18:50] fuera de la ventana de compra (10am–4pm ET).
+[18:55] fuera de la ventana de compra (10am–4pm ET).
+[19:00] fuera de la ventana de compra (10am–4pm ET).
+[19:05] fuera de la ventana de compra (10am–4pm ET).
+[19:10] fuera de la ventana de compra (10am–4pm ET).
+[19:15] fuera de la ventana de compra (10am–4pm ET).
+[19:20] fuera de la ventana de compra (10am–4pm ET).
+[19:25] fuera de la ventana de compra (10am–4pm ET).
+[19:30] fuera de la ventana de compra (10am–4pm ET).
+[20:17] fuera de la ventana de compra (10am–4pm ET).
+[21:10] fuera de la ventana de compra (10am–4pm ET).
+[22:12] fuera de la ventana de compra (10am–4pm ET).
+[22:17] fuera de la ventana de compra (10am–4pm ET).
+[22:22] fuera de la ventana de compra (10am–4pm ET).
+[22:57] fuera de la ventana de compra (10am–4pm ET).
+[00:02] fuera de la ventana de compra (10am–4pm ET).
+[01:18] fuera de la ventana de compra (10am–4pm ET).
+[02:45] fuera de la ventana de compra (10am–4pm ET).
+[02:50] fuera de la ventana de compra (10am–4pm ET).
+[03:02] fuera de la ventana de compra (10am–4pm ET).
+[03:30] fuera de la ventana de compra (10am–4pm ET).
+[03:35] fuera de la ventana de compra (10am–4pm ET).
+[03:40] fuera de la ventana de compra (10am–4pm ET).
+[03:45] fuera de la ventana de compra (10am–4pm ET).
+[03:50] fuera de la ventana de compra (10am–4pm ET).
+[03:55] fuera de la ventana de compra (10am–4pm ET).
+[04:00] fuera de la ventana de compra (10am–4pm ET).
+[04:05] fuera de la ventana de compra (10am–4pm ET).
+[04:10] fuera de la ventana de compra (10am–4pm ET).
+[04:15] fuera de la ventana de compra (10am–4pm ET).
+[04:20] fuera de la ventana de compra (10am–4pm ET).
+[04:25] fuera de la ventana de compra (10am–4pm ET).
+[04:30] fuera de la ventana de compra (10am–4pm ET).
+[04:35] fuera de la ventana de compra (10am–4pm ET).
+[04:40] fuera de la ventana de compra (10am–4pm ET).
+[04:45] fuera de la ventana de compra (10am–4pm ET).
+[04:50] fuera de la ventana de compra (10am–4pm ET).
+[04:55] fuera de la ventana de compra (10am–4pm ET).
+[05:00] fuera de la ventana de compra (10am–4pm ET).
+[05:05] fuera de la ventana de compra (10am–4pm ET).
+[05:10] fuera de la ventana de compra (10am–4pm ET).
+[05:15] fuera de la ventana de compra (10am–4pm ET).
+[05:20] fuera de la ventana de compra (10am–4pm ET).
+[05:25] fuera de la ventana de compra (10am–4pm ET).
+[05:30] fuera de la ventana de compra (10am–4pm ET).
+[05:35] fuera de la ventana de compra (10am–4pm ET).
+[05:40] fuera de la ventana de compra (10am–4pm ET).
+[06:00] fuera de la ventana de compra (10am–4pm ET).
+[06:05] fuera de la ventana de compra (10am–4pm ET).
+[06:10] fuera de la ventana de compra (10am–4pm ET).
+[06:15] fuera de la ventana de compra (10am–4pm ET).
+[06:20] fuera de la ventana de compra (10am–4pm ET).
+[06:25] fuera de la ventana de compra (10am–4pm ET).
+[06:30] fuera de la ventana de compra (10am–4pm ET).
+[06:35] fuera de la ventana de compra (10am–4pm ET).
+[06:40] fuera de la ventana de compra (10am–4pm ET).
+[06:45] fuera de la ventana de compra (10am–4pm ET).
+[06:50] fuera de la ventana de compra (10am–4pm ET).
+[06:55] fuera de la ventana de compra (10am–4pm ET).
+[07:00] fuera de la ventana de compra (10am–4pm ET).
+[07:22] fuera de la ventana de compra (10am–4pm ET).
+[07:27] fuera de la ventana de compra (10am–4pm ET).
+[07:32] fuera de la ventana de compra (10am–4pm ET).
+[07:37] fuera de la ventana de compra (10am–4pm ET).
+[07:42] fuera de la ventana de compra (10am–4pm ET).
+[07:47] fuera de la ventana de compra (10am–4pm ET).
+[07:52] fuera de la ventana de compra (10am–4pm ET).
+[07:57] fuera de la ventana de compra (10am–4pm ET).
+[08:02] fuera de la ventana de compra (10am–4pm ET).
+[08:07] fuera de la ventana de compra (10am–4pm ET).
+[08:12] fuera de la ventana de compra (10am–4pm ET).
+[08:17] fuera de la ventana de compra (10am–4pm ET).
+[08:22] fuera de la ventana de compra (10am–4pm ET).
+[08:27] fuera de la ventana de compra (10am–4pm ET).
+[08:46] fuera de la ventana de compra (10am–4pm ET).
+[08:51] fuera de la ventana de compra (10am–4pm ET).
+[08:56] fuera de la ventana de compra (10am–4pm ET).
+[09:01] fuera de la ventana de compra (10am–4pm ET).
+[09:06] fuera de la ventana de compra (10am–4pm ET).
+[09:11] fuera de la ventana de compra (10am–4pm ET).
+[09:16] fuera de la ventana de compra (10am–4pm ET).
+[09:21] fuera de la ventana de compra (10am–4pm ET).
+[09:26] fuera de la ventana de compra (10am–4pm ET).
+[09:31] fuera de la ventana de compra (10am–4pm ET).
+[09:31] ⏳ vence en 2 días: MSFT CALL 432.5
+[09:31] ventas: 1 avisos.
+[09:36] fuera de la ventana de compra (10am–4pm ET).
+[09:41] fuera de la ventana de compra (10am–4pm ET).
+[09:46] fuera de la ventana de compra (10am–4pm ET).
+[09:51] fuera de la ventana de compra (10am–4pm ET).
+[09:56] fuera de la ventana de compra (10am–4pm ET).
+[10:01] — CRM canal: no califica (ventaja insuficiente (×0.93; se pide ×1.2); probabilidad de doblar baja (12%; se pide 50%))
+72:413: execution error: System Events got an error: AppleEvent timed out. (-1712)
