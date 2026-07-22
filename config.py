@@ -223,7 +223,7 @@ VENCIMIENTO_POR_ESTRATEGIA = {
     "ma40": 2, "canal": 2, "caida_normal": 2, "caida_fuerte": 2,
     "gap_normal_alza": 2, "gap_bajista_alza": 2, "gap": 2,
     "piso_fuerte": 4, "primer_gap_alza": 4,
-    "tres_semanas": 7,
+    "tres_semanas": 21,   # su NOMBRE lo dice: ~3 semanas de plazo (antes 7d, inconsistente)
     # puts
     "primera_vela_roja": 3, "ruptura_piso_gap": 3, "modelo_4_pasos": 3,
     "hanger_diario": 5, "techo_fuerte": 4,
@@ -407,9 +407,9 @@ ESTRATEGIAS = {
         "intervalo": "1d",
         "velocidad": "lenta",
         "vigilancia": "baja",
-        "ritmo": "📅 Semanal",
-        "ritmo_txt": "Decides al cierre · aguantas semanas · casi sin vigilancia",
-        "descripcion": "opción OTM barata con ~3 semanas de plazo, se deja madurar. Recomendada para empezar.",
+        "ritmo": "📅 De cierre",
+        "ritmo_txt": "Decides al CIERRE · le das hasta ~3 semanas de plazo · si dobla antes, VENDES (no la aguantas a la fuerza)",
+        "descripcion": "opción OTM barata con ~3 semanas de plazo, para que el movimiento tenga tiempo. Suele pagar en 1-3 días; las 3 semanas son el techo, no una espera obligada. Recomendada para empezar.",
     },
 }
 # Estrategias sugeridas para arrancar (las más pausadas).

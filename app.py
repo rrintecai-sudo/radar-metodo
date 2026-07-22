@@ -1266,7 +1266,7 @@ def tarjeta_compacta(s: dict, key: str, moonshot: bool = False):
         intradia = ESTRATEGIAS[s["estrategia"]]["intervalo"] == "1h"
         if ps is not None:
             sc_col = "#0E7C6B" if (ps >= 45 and intradia) else ("#B8860B" if ps >= 30 else "#9AA0A6")
-            apto = "se mueve rápido" if (ps >= 45 and intradia) else ("movimiento moderado" if intradia else "movimiento lento (normal en diarias)")
+            apto = "se mueve rápido" if (ps >= 45 and intradia) else ("movimiento moderado" if intradia else "movimiento lento (normal en las de cierre)")
             st.markdown(f"<div style='background:#FFF7E6;border-radius:8px;padding:6px 10px;font-size:.83rem;"
                         f"color:#7A5B00;'>⚡ <b>Velocidad — +20% en el día: <span style='color:{sc_col};'>{ps}%</span></b> "
                         f"<span style='color:#9AA0A6;'>· {apto}</span></div>", unsafe_allow_html=True)
