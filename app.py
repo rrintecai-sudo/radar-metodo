@@ -11,7 +11,9 @@ Ejecutar:   streamlit run app.py
 """
 from __future__ import annotations
 
+import json
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -151,6 +153,42 @@ def chequear_senal(ticker: str, direccion: str) -> tuple[str, str]:
                        "Pérdida topada; deja correr hasta que doble o venza")
 
 
+# ── CAPITAL PERSISTENTE ──────────────────────────────────────────────────────
+# Tu capital se guarda en disco: lo pones UNA vez y el sistema lo recuerda entre
+# sesiones. No se pierde al recargar ni se queda con un número viejo escrito a mano.
+_CAPITAL_FILE = Path(__file__).resolve().parent / "data" / "cuenta.json"
+
+
+def cargar_capital() -> int:
+    try:
+        return int(json.loads(_CAPITAL_FILE.read_text())["capital"])
+    except Exception:
+        return CAPITAL_DEFECTO
+
+
+def guardar_capital(v: int) -> None:
+    try:
+        _CAPITAL_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _CAPITAL_FILE.write_text(json.dumps({"capital": int(v)}))
+    except Exception:
+        pass
+
+
+def capital_actual() -> int:
+    """El capital vigente: de la sesión si ya se tocó, si no del disco."""
+    if "cuenta_usd" not in st.session_state:
+        st.session_state["cuenta_usd"] = cargar_capital()
+    return int(st.session_state["cuenta_usd"])
+
+
+def fijar_capital(v: int) -> None:
+    """Actualiza el capital en la sesión Y en disco (persiste)."""
+    v = int(v)
+    if v != st.session_state.get("cuenta_usd"):
+        st.session_state["cuenta_usd"] = v
+        guardar_capital(v)
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def cotizacion(ticker: str, tipo: str, strike: float, dias: int) -> dict | None:
     return opcion_real.cotizar(ticker, tipo, strike, dias)
@@ -267,7 +305,7 @@ def jugada_x10(s: dict, h: dict, tp: str):
             f"⚠️ **Es lotería, y hay que jugarla como tal.** Lo más probable ({100-p10:.0f}%) "
             "es que se vaya a **cero**. Métele solo una **tajada chica** — dinero que ya diste "
             "por perdido. **Nunca** el tamaño de una operación normal.")
-        cuenta = int(st.session_state.get("cuenta_usd", CAPITAL_DEFECTO))
+        cuenta = capital_actual()
         sugerido = max(1, int((cuenta * 0.03) // costo)) if costo else 1
         st.info(f"💡 Tamaño sugerido: **3% de tu cuenta** (${round(cuenta*0.03)}) → "
                 f"**{sugerido} contrato(s)** = ${sugerido*costo}. Si se va a cero, no te duele.")
@@ -759,7 +797,7 @@ def frase_de_decision(s: dict, cot: dict, costo1: int):
     p3 = opcion_real.prob_de_multiplo(s["precio"], cot, h["targets"], 3, tp)
 
     # cuántos contratos recomiendo (10% de la cuenta)
-    cuenta = int(st.session_state.get("cuenta_usd", CAPITAL_DEFECTO))
+    cuenta = capital_actual()
     riesgo = round(cuenta * RIESGO_MAX_CAPITAL_PCT / 100)
     n_rec = max(1, int(riesgo // costo1)) if costo1 else 1
     inv_total = n_rec * costo1
@@ -885,11 +923,10 @@ def orden_de_compra(s: dict):
         cc = st.columns([1, 1])
         cuenta = cc[0].number_input(
             "💼 Mi capital disponible ($)", min_value=100,
-            value=int(st.session_state.get("cuenta_usd", CAPITAL_DEFECTO)), step=100,
+            value=capital_actual(), step=100,
             key=f"cta_{s['ticker']}_{s['estrategia']}",
             help="Cámbialo cuando quieras. Se aplica a TODAS las fichas y recalcula la cantidad al instante.")
-        if cuenta != st.session_state.get("cuenta_usd"):
-            st.session_state["cuenta_usd"] = cuenta      # global para todas las fichas
+        fijar_capital(cuenta)      # global y PERSISTENTE (se recuerda entre sesiones)
         cc[1].metric("Riesgo por operación",
                      f"${round(cuenta * RIESGO_MAX_CAPITAL_PCT / 100)}",
                      help=f"El {RIESGO_MAX_CAPITAL_PCT}% de tu capital — lo máximo que arriesgas en esta.")
@@ -1681,17 +1718,18 @@ if dashboard:
 
     panel_calendario()
 
-    # --- 💼 TU CAPITAL (global): fija tu cuenta una vez para toda la sesión ---
+    # --- 💼 TU CAPITAL (global y PERSISTENTE): ponlo una vez, el sistema lo recuerda ---
     cap_cols = st.columns([1, 3])
     cap = cap_cols[0].number_input(
         "💼 Mi capital ($)", min_value=100,
-        value=int(st.session_state.get("cuenta_usd", CAPITAL_DEFECTO)), step=100,
-        help="Se usa en TODAS las fichas para calcular cuántos contratos comprar. "
-             "También puedes cambiarlo dentro de cada oportunidad.")
-    st.session_state["cuenta_usd"] = cap
+        value=capital_actual(), step=100,
+        help="Se guarda en disco: lo pones una vez y se recuerda entre sesiones. "
+             "Se usa en TODAS las fichas para calcular cuántos contratos comprar.")
+    fijar_capital(cap)      # persiste en disco
     cap_cols[1].caption(f"El sistema arriesgará el **{RIESGO_MAX_CAPITAL_PCT}%** = "
                         f"**${round(cap*RIESGO_MAX_CAPITAL_PCT/100)}** por operación. "
-                        "Cambia tu capital cuando crezca y todo se recalcula solo.")
+                        "Actualízalo cuando tu cuenta cambie y todo se recalcula solo. "
+                        "Queda guardado — no se te borra al recargar.")
 
     # --- 🧭 TU SITUACIÓN: cuánto cupo te queda esta semana ---
     try:
