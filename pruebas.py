@@ -189,6 +189,29 @@ check("Si salta directo a +1200% avisa el ×10 (el más alto)",
 check("Google e Intel buscan primas de $0.60-0.80",
       PRIMA_OBJETIVO.get("GOOGL") == (0.60, 0.80) and PRIMA_OBJETIVO.get("INTC") == (0.60, 0.80), "")
 
+# --- 9. PUERTA DE ASIMETRÍA (el caso del oro, 22-jul) ---
+print("\n[9] Apuesta asimétrica — no rechazar el oro por 'dobla poco'")
+
+from engine import veredicto as ver
+
+# El oro: VE 2.03, dobla 31%, muestra 21. Antes -> PÁSALA. Ahora -> debe pasar.
+s_oro = {"estado": "ENTRADA", "precio": 380.0, "opcion": {"tipo": "CALL"}}
+h_ok = {"n": 21, "targets": [], "sin_datos": False}
+cot_x = {"strike": 383, "premium": 0.74}
+pasa_oro, falla_oro = ver.califica(s_oro, cot_x, h_ok, ve=2.03, p2=31)
+check("El oro (VE 2.03, dobla 31%) YA NO se descarta por 'dobla poco'",
+      pasa_oro, f"lo siguió rechazando: {falla_oro}")
+
+# Pero una apuesta MALA de verdad (VE bajo) sigue rechazándose
+pasa_mala, _ = ver.califica(s_oro, cot_x, h_ok, ve=0.9, p2=20)
+check("Una apuesta mala (VE 0.9, dobla 20%) SÍ se rechaza",
+      not pasa_mala, "dejó pasar una apuesta de ventaja baja")
+
+# Y una con ventaja normal pero doblar bajo Y VE no-asimétrico se rechaza
+pasa_borde, _ = ver.califica(s_oro, cot_x, h_ok, ve=1.4, p2=35)
+check("Ventaja media (VE 1.4) con doblar 35% sigue siendo PÁSALA",
+      not pasa_borde, "aflojó demasiado la puerta")
+
 # --- RESULTADO ---
 print("\n" + "=" * 62)
 if _fallos:

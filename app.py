@@ -633,12 +633,18 @@ def veredicto_compra(s: dict) -> dict:
     else:
         falla.append(f"Ventaja insuficiente (×{ve}; se pide ×1.2)")
 
-    # --- 3) probabilidad de doblar ---
+    # --- 3) probabilidad de doblar (o APUESTA ASIMÉTRICA: ventaja alta compensa) ---
+    # El oro doblaba 31% pero VE 2.0+: dobla poco, pero cuando pega hace ×5-×7. Ese
+    # es el método. Con ventaja ×1.8+ y algo de chance, se acepta (no se descarta).
     p2, t2 = s.get("_p_x2"), s.get("_t_x2")
+    asimetrica = (ve is not None and ve >= 1.8 and p2 is not None and p2 >= 25)
     if p2 is None:
         falla.append("Sin histórico para estimar la probabilidad de doblar")
     elif p2 >= 50:
         ok.append(f"Buena probabilidad de doblar ({p2:.0f}%)")
+    elif asimetrica:
+        ok.append(f"🎲 Apuesta asimétrica: dobla pocas veces ({p2:.0f}%) PERO cuando pega paga "
+                  f"enorme (ventaja ×{ve}). Es el corazón del método — métele tajada chica.")
     else:
         falla.append(f"Probabilidad de doblar baja ({p2:.0f}%; se pide 50%)")
 

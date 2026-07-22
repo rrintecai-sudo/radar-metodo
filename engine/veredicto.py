@@ -21,6 +21,14 @@ VE_MINIMO = 1.2          # por cada $1 arriesgado, esperar al menos $1.20
 PROB_X2_MINIMA = 50      # probabilidad de doblar
 MUESTRA_MINIMA = 12      # casos históricos para fiarse del porcentaje
 
+# ── PUERTA DE ASIMETRÍA ──────────────────────────────────────────────────────
+# El oro (22-jul) doblaba solo el 31% de las veces, PERO cuando pega hace ×5-×7
+# (VE 2.0+). Ese es el corazón del método: riesgo topado + salto enorme. Exigir
+# "50% de doblar" mataba justo esas apuestas. Ahora, con ventaja alta y ALGO de
+# chance del gran salto, la baja frecuencia de doblar se acepta.
+VE_ASIMETRICO = 1.8       # con esta ventaja, no se exige el 50% de doblar
+PROB_X2_PISO_ASIM = 25    # pero necesita algo de chance del gran salto (no lotería pura)
+
 
 def califica(s: dict, cot: dict | None, h: dict | None,
              ve: float | None = None, p2: float | None = None,
@@ -52,8 +60,13 @@ def califica(s: dict, cot: dict | None, h: dict | None,
 
         if ve is None or ve < VE_MINIMO:
             falla.append(f"ventaja insuficiente (×{ve}; se pide ×{VE_MINIMO})")
-        if p2 is None or p2 < PROB_X2_MINIMA:
-            falla.append(f"probabilidad de doblar baja ({p2:.0f}%; se pide {PROB_X2_MINIMA}%)")
+        # Probabilidad de doblar: 50%... O una apuesta ASIMÉTRICA (ventaja alta con
+        # algo de chance del gran salto). El oro es el caso: dobla 31% pero VE 2.0+.
+        asimetrica = (ve is not None and ve >= VE_ASIMETRICO
+                      and p2 is not None and p2 >= PROB_X2_PISO_ASIM)
+        if (p2 is None or p2 < PROB_X2_MINIMA) and not asimetrica:
+            falla.append(f"probabilidad de doblar baja ({p2:.0f}%; se pide {PROB_X2_MINIMA}% "
+                         f"o ventaja ×{VE_ASIMETRICO}+ para apuesta asimétrica)")
         if n < MUESTRA_MINIMA:
             falla.append(f"muestra muy chica ({n} casos; se piden {MUESTRA_MINIMA})")
 
