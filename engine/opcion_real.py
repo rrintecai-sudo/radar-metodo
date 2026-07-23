@@ -75,6 +75,10 @@ def cotizar_por_prima(ticker: str, tipo: str, precio: float, dias: int,
     rango = rango or PRIMA_OBJETIVO.get(ticker.upper(), PRIMA_OBJETIVO_DEFECTO)
     lo, hi = rango
     centro = (lo + hi) / 2
+    # GUARDA DE DISTANCIA (Cardona: "cuando está tan lejos realmente no es negocio").
+    # Nunca elegir un strike a más de este % del precio, aunque la prima objetivo caiga
+    # más lejos. USO 23-jul dio strike 103 con USO en 140 = 26% OTM (caída imposible).
+    MAX_OTM_PCT = 12.0
     try:
         t = yf.Ticker(ticker)
         exps = t.options
@@ -94,6 +98,13 @@ def cotizar_por_prima(ticker: str, tipo: str, precio: float, dias: int,
             otm = tabla[tabla["strike"] < precio].copy()
         if not len(otm):
             return None
+
+        # GUARDA DE DISTANCIA: descarta strikes absurdamente lejos. Si TODOS están
+        # lejos, se queda con los más cercanos (mejor una prima más cara pero un
+        # strike alcanzable, que un contrato regalado que jamás va a pagar).
+        otm["_dist"] = (otm["strike"] - precio).abs() / precio * 100.0
+        cerca = otm[otm["_dist"] <= MAX_OTM_PCT]
+        otm = cerca if len(cerca) else otm.nsmallest(3, "_dist")
 
         # PRECIO REAL DE COMPRA = el ASK (lo que de verdad pagas al comprar).
         # Si no hay ask, caemos al último precio negociado.
