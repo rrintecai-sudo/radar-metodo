@@ -87,9 +87,13 @@ def escanear_universo(tickers: list[str] | None = None,
     from config import UNIVERSO
     tickers = tickers or UNIVERSO_TICKERS
     if estrategias is None:
-        estrategias = list(ESTRATEGIAS_DIARIAS)
+        # TODAS las estrategias DE CIERRE (1d), incluidas las de PUT (hanger, techo).
+        # Antes solo escaneaba piso_fuerte y tres_semanas (ambas CALL) -> en días de
+        # CAÍDA el Radar mostraba 0 porque ni miraba las de PUT. Bug gordo.
+        estrategias = [e for e, v in ESTRATEGIAS.items() if v.get("intervalo") == "1d"]
         if incluir_horario:
-            estrategias += ["ma40", "canal"]
+            # y TODAS las de hora, incluidas las de PUT (primera vela roja, ruptura, modelo 4 pasos)
+            estrategias += [e for e, v in ESTRATEGIAS.items() if v.get("intervalo") != "1d"]
 
     # agrupamos las estrategias por el marco de datos que necesitan
     por_intervalo: dict[str, list[str]] = {}

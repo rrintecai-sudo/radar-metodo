@@ -4,16 +4,6 @@
   You can now view your Streamlit app in your browser.
 
   Local URL: http://localhost:8501
-  Network URL: http://192.168.68.69:8501
+  Network URL: http://192.168.68.53:8501
   External URL: http://108.191.176.183:8501
 
-2026-07-22 12:54:11.440 Uncaught app execution
-Traceback (most recent call last):
-  File "/Users/oscarrodriguez/Documents/ClaudeCode Proyectos/bolsa de valores -app/.venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 128, in exec_func_with_error_handling
-    result = func()
-  File "/Users/oscarrodriguez/Documents/ClaudeCode Proyectos/bolsa de valores -app/.venv/lib/python3.9/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 669, in code_to_exec
-    exec(code, module.__dict__)  # noqa: S102
-  File "/Users/oscarrodriguez/Documents/ClaudeCode Proyectos/bolsa de valores -app/app.py", line 22, in <module>
-    from config import (ACTIVOS, UNIVERSO, TICKERS, UNIVERSO_NUCLEO, UNIVERSO_PARALELO,
-ImportError: cannot import name 'CAPITAL_DEFECTO' from 'config' (/Users/oscarrodriguez/Documents/ClaudeCode Proyectos/bolsa de valores -app/config.py)
-  Stopping...
