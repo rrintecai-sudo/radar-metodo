@@ -16,3 +16,4 @@ Traceback (most recent call last):
   File "/Users/oscarrodriguez/Documents/ClaudeCode Proyectos/bolsa de valores -app/app.py", line 22, in <module>
     from config import (ACTIVOS, UNIVERSO, TICKERS, UNIVERSO_NUCLEO, UNIVERSO_PARALELO,
 ImportError: cannot import name 'CAPITAL_DEFECTO' from 'config' (/Users/oscarrodriguez/Documents/ClaudeCode Proyectos/bolsa de valores -app/config.py)
+  Stopping...

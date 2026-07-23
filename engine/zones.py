@@ -229,7 +229,10 @@ def es_hanger(vela) -> dict:
     hay = (cuerpo <= 0.45 * rango            # cuerpo pequeño respecto al rango
            and cola_sup >= 1.5 * cuerpo      # cola de arriba claramente larga
            and cola_sup >= 0.45 * rango      # y domina la vela
-           and cola_inf <= 1.0 * cuerpo)     # poca cola abajo (no es martillo)
+           and cola_inf <= 0.5 * cola_sup)   # cola de abajo MUCHO menor que la de arriba (no es martillo)
+    # OJO: antes comparaba cola_inf con el CUERPO. Con un hanger extremo (cuerpo ~1%,
+    # cola arriba 91% — el oro del 22-jul) esa condición era imposible y lo rechazaba.
+    # Lo correcto es: la cola de abajo debe ser pequeña frente a la de ARRIBA.
     return {"hay": bool(hay), "cuerpo_pct": round(cuerpo / rango * 100),
             "cola_sup_x": round(cola_sup / cuerpo, 1) if cuerpo else 99}
 

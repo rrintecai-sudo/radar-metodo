@@ -212,6 +212,21 @@ pasa_borde, _ = ver.califica(s_oro, cot_x, h_ok, ve=1.4, p2=35)
 check("Ventaja media (VE 1.4) con doblar 35% sigue siendo PÁSALA",
       not pasa_borde, "aflojó demasiado la puerta")
 
+# --- 10. EL HANGER EXTREMO (el oro del 22-jul, +500%) ---
+print("\n[10] Hanger — no rechazar el hanger extremo (cuerpo diminuto)")
+
+# Hanger extremo: cola larga arriba, cuerpo ~diminuto (como el oro). Antes -> rechazado.
+hanger_ext = _velas([(100, 100.3, 110, 99.5)]).iloc[0]   # cuerpo 0.3, cola arriba ~9.7
+check("Un hanger de cuerpo diminuto SÍ se detecta",
+      zn.es_hanger(hanger_ext)["hay"] is True,
+      "rechazó un hanger extremo por tener el cuerpo muy pequeño")
+
+# Un martillo (cola larga ABAJO) NO es hanger
+martillo = _velas([(100, 100.3, 101, 90)]).iloc[0]        # cola larga abajo
+check("Un martillo (cola abajo) NO se confunde con hanger",
+      zn.es_hanger(martillo)["hay"] is False,
+      "aceptó un martillo como si fuera hanger")
+
 # --- RESULTADO ---
 print("\n" + "=" * 62)
 if _fallos:
