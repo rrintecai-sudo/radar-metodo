@@ -1423,6 +1423,59 @@ def render_grid(filt: list[dict], key_prefix: str, presupuesto: int, top: int = 
     return len(mostrados)
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def _ranking_edge_cache():
+    """Escaneo pesado (155+ backtests): se cachea 1h para no rehacerlo en cada carga."""
+    from engine import ranking
+    return ranking.escanear_edge()
+
+
+def render_ranking():
+    """🏆 RANKING DE EDGE — proactivo: qué combos funcionan según años de datos."""
+    st.markdown(CABECERA, unsafe_allow_html=True)
+    st.markdown("## 🏆 Ranking de Edge")
+    st.caption("Proactivo, no reactivo: medimos el edge histórico de CADA estrategia sobre "
+               "CADA activo, sobre años de datos. Esto no lo hace nadie a ojo — es nuestra ventaja.")
+
+    c1, c2 = st.columns([1, 3])
+    if c1.button("🔄 Recalcular ranking"):
+        _ranking_edge_cache.clear()
+        st.rerun()
+    c2.caption("Se recalcula solo cada hora. 'Edge' = movimiento a favor típico vs. en contra, "
+               "ponderado por el % de acierto. Mide el ACTIVO; la opción lo multiplica.")
+
+    with st.spinner("Midiendo edge sobre años de datos… (la primera vez tarda ~1 min)"):
+        filas = _ranking_edge_cache()
+    if not filas:
+        st.warning("No pude calcular el ranking ahora. Intenta 'Recalcular'.")
+        return
+
+    confiables = [f for f in filas if f["confiable"]]
+    chicas = [f for f in filas if not f["confiable"]]
+
+    st.markdown("### ✅ Las confiables (muestra ≥ 12 casos) — **enfoca aquí**")
+    st.caption("Estas tienen suficiente historia para creerles el porcentaje. Son las que "
+               "vale la pena paper-tradear primero.")
+    st.dataframe(pd.DataFrame([{
+        "Activo": f["ticker"], "Estrategia": f["nombre"], "Dir": f["direccion"],
+        "Casos": f["n"], "Acierto": f"{f['acierto']}%",
+        "A favor típico": f"+{f['favor']}%", "Buen caso (p90)": f"+{f['p90']}%",
+        "En contra": f"-{f['contra']}%", "EDGE": f["edge"],
+    } for f in confiables[:25]]), hide_index=True, use_container_width=True)
+
+    with st.expander(f"⚠️ Muestra chica (< 12 casos) — {len(chicas)} combos, tómalas con pinzas"):
+        st.caption("Edge alto pero pocos casos = puede ser suerte. No arranques por aquí.")
+        st.dataframe(pd.DataFrame([{
+            "Activo": f["ticker"], "Estrategia": f["nombre"], "Dir": f["direccion"],
+            "Casos": f["n"], "Acierto": f"{f['acierto']}%",
+            "A favor típico": f"+{f['favor']}%", "EDGE": f["edge"],
+        } for f in chicas[:20]]), hide_index=True, use_container_width=True)
+
+    st.info("**Cómo usarlo:** paper-tradea los de arriba (edge alto + muestra grande) cuando el "
+            "Radar los marque 🟢 TÓMALA, registra en la bitácora, y medimos hacia adelante. "
+            "El ranking se afina con cada operación real. **Probar y medir, probar y medir.**")
+
+
 def render_bitacora():
     st.markdown(CABECERA, unsafe_allow_html=True)
     st.markdown("## 📔 Bitácora")
@@ -1631,10 +1684,12 @@ with st.sidebar:
     st.header("Ajustes")
     universo_modo = st.radio(
         "Vista",
-        ["🏠 Dashboard (3 universos)", "📔 Bitácora", "Método puro: S&P 500",
-         "Motor paralelo: fuera del S&P 500", "Solo ETFs base (5)"],
-        help="Dashboard: oportunidades. Bitácora: registra y mide tus operaciones.")
+        ["🏠 Dashboard (3 universos)", "🏆 Ranking de Edge", "📔 Bitácora",
+         "Método puro: S&P 500", "Motor paralelo: fuera del S&P 500", "Solo ETFs base (5)"],
+        help="Dashboard: oportunidades de hoy. Ranking de Edge: qué combos funcionan "
+             "según años de datos (proactivo). Bitácora: registra y mide tus operaciones.")
     bitacora_mode = universo_modo.startswith("📔")
+    ranking_mode = universo_modo.startswith("🏆")
     dashboard = universo_modo.startswith("🏠")
     ampliado = dashboard or not universo_modo.startswith("Solo ETFs")
     universo_tickers = UNIVERSO_NUCLEO if universo_modo.startswith("Método") else UNIVERSO_PARALELO
@@ -1705,6 +1760,12 @@ def panel_calendario():
 # =====================  MODO: BITÁCORA  =====================
 if bitacora_mode:
     render_bitacora()
+    st.stop()
+
+
+# =====================  MODO: RANKING DE EDGE  =====================
+if ranking_mode:
+    render_ranking()
     st.stop()
 
 
