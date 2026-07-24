@@ -189,6 +189,30 @@ def fijar_capital(v: int) -> None:
         guardar_capital(v)
 
 
+def frescura_senal(s: dict) -> dict | None:
+    """
+    Minutos desde que se disparó la señal, y si ya 'pasó su momento'.
+    SOLO aplica a estrategias DE HORA (intradía): esas hay que tomarlas frescas.
+    Las DE CIERRE (1d) no envejecen así — se compran al cierre. Devuelve None si
+    no aplica (de cierre, o sin fecha). Una sola fuente para la orden Y el veredicto.
+    """
+    try:
+        iv = ESTRATEGIAS[s["estrategia"]]["intervalo"]
+        if iv not in ("1h", "30m"):
+            return None
+        from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+        _ET = _tz(_td(hours=-4))
+        t = pd.to_datetime(s["fecha"])
+        t = t.tz_convert(_ET) if t.tzinfo else t.tz_localize(_ET)
+        mins = (_dt.now(_ET) - t.to_pydatetime()).total_seconds() / 60
+        if mins < 0:
+            return None
+        estado = "fresca" if mins <= 20 else ("sirve" if mins <= 60 else "vieja")
+        return {"mins": mins, "estado": estado, "vieja": mins > 60}
+    except Exception:
+        return None
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def cotizacion(ticker: str, tipo: str, strike: float, dias: int) -> dict | None:
     return opcion_real.cotizar(ticker, tipo, strike, dias)
@@ -703,6 +727,18 @@ def veredicto_compra(s: dict) -> dict:
                    and n >= 20 and t2 is not None and t2 <= 3)
 
     # --- veredicto ---
+    # FRESCURA PRIMERO: una señal DE HORA vieja (>60 min) ya pasó su momento y NUNCA
+    # se muestra como TÓMALA — aunque sea excepcional o esté sobre cupo. Así el Radar
+    # no se contradice (antes decía "TÓMALA" arriba y "ya pasó su momento" abajo).
+    fr = frescura_senal(s)
+    if fr and fr["vieja"] and not falla:
+        return {"nivel": "espera", "titulo": "🟠 BUENA — pero ya pasó su momento",
+                "resumen": (f"Cumple, PERO la señal se disparó hace {fr['mins']:.0f} min y ya pasó "
+                            "su mejor momento de entrada. **No la persigas — espera una fresca.**"),
+                "ok": ok, "falla": [],
+                "ojo": ojo + [f"⏳ Señal de hace {fr['mins']:.0f} min — ya pasó su momento (es de hora)"],
+                "notas": notas}
+
     # El cupo AVISA, no bloquea: la decisión final es de Oscar. Pero le decimos
     # con claridad si la señal es lo bastante buena para justificar la excepción.
     if frena_cartera and not falla:
