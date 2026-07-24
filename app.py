@@ -1906,7 +1906,11 @@ if dashboard:
         st.caption(f"{subt}  ·  🟢 **{n_ent} listas** · toca **Ver ficha ↗** para abrirla en otra pestaña")
         if indice == "FUERA" and lista:
             st.caption("🧪 Más arriesgadas. Posiciones pequeñas.")
-        render_grid(lista, keyp, d_pres, top=6, moonshot=d_moonshot,
+        # MOSTRAR TODAS las confirmadas, no solo 6. Con top=6, en días de caída los
+        # CALLs copaban el ranking y los PUTs (META, AMZN...) quedaban ocultos aunque
+        # fueran TÓMALA. Nunca esconder una entrada accionable. (render_grid ya corta
+        # en 25 internamente y respeta presupuesto.)
+        render_grid(lista, keyp, d_pres, top=25, moonshot=d_moonshot,
                     filtro_premio=d_premio, ncols=3)
         st.divider()
 
