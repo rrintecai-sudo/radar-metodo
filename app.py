@@ -1821,6 +1821,16 @@ if dashboard:
         st.caption(f"🔴 EN VIVO · {ahora} — se re-rankea solo cada 3 min. "
                    "Las señales intradía cambian durante el día; actúa cuando estén frescas.")
 
+    # ACLARACIÓN CLAVE: varias verdes NO significa comprarlas todas. 'TÓMALA' quiere
+    # decir "esta CALIFICA", no "tómalas todas". Se toma solo la MEJOR 1-2 (arriba).
+    if len(entradas) >= 2:
+        st.warning(
+            f"🎯 **Hoy CALIFICAN {len(entradas)} señales (verdes) — pero NO se compran todas.** "
+            "El método pide tomar solo **1-2: las de MÁS ARRIBA** (mayor Oportunidad/VE). "
+            "**'🟢 TÓMALA' = 'esta es lo bastante buena', NO 'tómalas todas'.** "
+            "El Radar es el **menú**; tú eliges la(s) mejor(es) de arriba. Las de abajo quedan "
+            "de reserva — **no son órdenes de compra.**")
+
     panel_calendario()
 
     # --- 💼 TU CAPITAL (global y PERSISTENTE): ponlo una vez, el sistema lo recuerda ---
