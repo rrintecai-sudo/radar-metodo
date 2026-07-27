@@ -33,6 +33,30 @@ MUESTRA_MINIMA = 6       # casos históricos para fiarse del porcentaje
 VE_ASIMETRICO = 1.8       # con esta ventaja, no se exige el 50% de doblar
 PROB_X2_PISO_ASIM = 25    # pero necesita algo de chance del gran salto (no lotería pura)
 
+# ── FRESCURA ─────────────────────────────────────────────────────────────────
+# Una señal DE HORA (intradía) que ya lleva rato "pasó su momento". El Vigilante
+# y el Radar tienen que estar de acuerdo: antes el Vigilante avisaba "tómala ya"
+# de algo que el Radar marcaba "espera" (COIN 27-jul, 62 min). Ahora ambos usan
+# esto. Las DE CIERRE (1d) no envejecen así (se compran al cierre).
+FRESCURA_MAX_MIN = 60
+
+
+def _minutos_desde_senal(s: dict) -> float | None:
+    """Minutos desde que se disparó la señal (solo de hora). None si es de cierre."""
+    try:
+        from config import ESTRATEGIAS
+        from datetime import datetime, timezone, timedelta
+        import pandas as pd
+        if ESTRATEGIAS.get(s.get("estrategia"), {}).get("intervalo", "1d") == "1d":
+            return None
+        ET = timezone(timedelta(hours=-4))
+        t = pd.to_datetime(s.get("fecha"))
+        t = t.tz_convert(ET) if t.tzinfo else t.tz_localize(ET)
+        mins = (datetime.now(ET) - t.to_pydatetime()).total_seconds() / 60
+        return mins if mins >= 0 else None
+    except Exception:
+        return None
+
 
 def califica(s: dict, cot: dict | None, h: dict | None,
              ve: float | None = None, p2: float | None = None,
@@ -73,6 +97,11 @@ def califica(s: dict, cot: dict | None, h: dict | None,
                          f"o ventaja ×{VE_ASIMETRICO}+ para apuesta asimétrica)")
         if n < MUESTRA_MINIMA:
             falla.append(f"muestra muy chica ({n} casos; se piden {MUESTRA_MINIMA})")
+
+    # FRESCURA: una señal de hora vieja ya pasó su momento (mismo criterio que el Radar).
+    mins = _minutos_desde_senal(s)
+    if mins is not None and mins > FRESCURA_MAX_MIN:
+        falla.append(f"señal vieja ({mins:.0f} min) — ya pasó su momento")
 
     if earnings_riesgo:
         falla.append("reporte de resultados dentro de la vida de la opción")
