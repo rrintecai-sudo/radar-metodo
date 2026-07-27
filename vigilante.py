@@ -138,12 +138,21 @@ def escanear_y_avisar() -> int:
         _guardar_estado(estado)
         return 0
 
+    # NO avisar COMPRAS de un activo que YA tienes abierto (no concentrar). Si ya
+    # tienes NOW, pingarte otra NOW es ruido — el Radar la rechazaría igual. Esto
+    # hace que CADA aviso valga la pena verificar (no llegan "no" obvios).
+    from engine import bitacora
+    ya_tengo = {t["ticker"] for lib in ("real", "simulacion")
+                for t in bitacora.listar(lib, "abierta")}
+
     ops = screener.escanear_universo(tickers=UNIVERSO_NUCLEO,
                                      incluir_horario=True, con_backtest=False)
     nuevas = 0
     for s in ops:
         if s["estado"] != "ENTRADA":
             continue
+        if s["ticker"] in ya_tengo:
+            continue  # ya lo tienes abierto -> no concentrar, no avisar
         # PUTS ACTIVOS: ya tenemos sus reglas del día 2 (primera vela roja de
         # apertura, ruptura del piso del gap, 4 pasos, hanger diario, techo fuerte).
         intervalo = ESTRATEGIAS.get(s["estrategia"], {}).get("intervalo", "1d")
