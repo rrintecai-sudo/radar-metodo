@@ -498,24 +498,26 @@ def _eval_primera_vela_roja(df: pd.DataFrame, vivo: bool = False) -> dict:
         chk["soporte"] = {"ok": True, "detalle": f"Techo histórico {techo['precio']:.2f} ({techo['toques']} toques)"}
     if ind.medias_alineadas(df, 40, 20):
         chk["media"] = {"ok": True, "detalle": "Tendencia bajista (40 sobre 20)"}
-    # MATIZ de la clase en vivo (20-jul): "primera vela roja" ≠ "primera vela roja
-    # DE APERTURA". Si el día ABRIÓ ARRIBA con gap, esa vela roja NO es la señal
-    # (ese caso es 'ruptura del piso del gap', otra estrategia). Alejandro descartó
-    # Amazon exactamente por esto: "pero no es primera vela roja DE APERTURA".
-    g = zn.gap_de_sesion(df)
-    abrio_arriba = bool(g and g["direccion"] == "arriba" and g["gap_pct"] >= 0.3)
-    if abrio_arriba:
-        chk["zona"] = {"ok": False, "detalle": ""}
-        rup = {"hay": False,
-               "texto": f"Abrió ARRIBA {g['gap_pct']:.1f}% — es 'primera vela roja', no 'de apertura'"}
+    # SOLIDEZ, no el gap. Corrección (28-jul) tras la clase del 27-jul: el SPY ABRIÓ
+    # ARRIBA 0.82% y SÍ era primera vela roja de apertura (+100%). Alejandro: "una
+    # primera vela roja de apertura, LA APERTURA FUE ARRIBA... muchos compran cuando
+    # abre arriba, malísima idea". Abrir arriba y caer rojo ES la trampa/señal clásica.
+    # Antes se invalidaba cualquier gap ≥0.3% arriba y eso MATABA señales válidas.
+    # El filtro real es que la vela roja sea SÓLIDA (cuerpo domina). AMZN (20-jul) tenía
+    # una vela roja débil; el SPY del 27 fue una vela roja fuerte que cayó a su piso.
+    o_v, c_v = float(v["Open"]), float(v["Close"])
+    h_v, l_v = float(v["High"]), float(v["Low"])
+    rango_v = h_v - l_v
+    solida = rango_v <= 0 or (abs(c_v - o_v) / rango_v) >= 0.5
 
-    if roja and not abrio_arriba:
-        chk["vela"] = {"ok": True, "detalle": "Primera vela del día ROJA (señal bajista)"}
+    if roja and solida:
+        chk["vela"] = {"ok": True, "detalle": "Primera vela del día ROJA y sólida (señal bajista)"}
         if en_zona:
             chk["ruptura"] = {"ok": True, "detalle": "Primera vela roja de apertura confirmada — compra a las 10:00"}
             rup = {"hay": True, "texto": "Primera vela roja de apertura"}
-    elif roja and abrio_arriba:
+    elif roja and not solida:
         chk["vela"] = {"ok": False, "detalle": ""}
+        rup = {"hay": False, "texto": "Vela roja DÉBIL (cuerpo pequeño) — no es señal clara"}
     geo = {"enfasis_medias": [20, 40], "ruptura": rup, "techo": techo,
            "vela_patron": "primera_roja" if roja else None, "vela_ok": roja}
     return {"direccion": "put", "checklist": chk, "ruptura_ok": rup["hay"],
